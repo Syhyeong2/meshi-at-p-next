@@ -4,14 +4,21 @@ import { Plus } from "lucide-react";
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
 import { getPlacesAction } from "@/features/places/actions";
-import { NewPlaceReviewPanel } from "@/features/places/components/NewPlaceReviewPanel";
+import {
+  NewPlaceReviewPanel,
+  PlaceDetailPanel,
+} from "@/features/places/components/NewPlaceReviewPanel";
 import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
+import {
+  buildPlacesHref,
+  NEW_PLACE_REVIEW_PANEL,
+  PLACE_DETAIL_PANEL,
+} from "@/features/places/panelLinks";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { getTagGroupsAction } from "@/features/tag/actions";
 
 const PLACES_PAGE_SIZE = 20;
-const NEW_PLACE_REVIEW_PANEL = "new-place-review";
 
 type SearchParamValue = string | string[] | undefined;
 
@@ -19,6 +26,7 @@ type ExplorePageProps = {
   searchParams: Promise<{
     page?: SearchParamValue;
     panel?: SearchParamValue;
+    placeId?: SearchParamValue;
   }>;
 };
 
@@ -32,20 +40,13 @@ function parsePageParam(value: SearchParamValue): number {
   return Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 }
 
-function getPlacesHref(page: number, panel?: typeof NEW_PLACE_REVIEW_PANEL): string {
-  const params = new URLSearchParams({ page: String(page) });
-
-  if (panel) {
-    params.set("panel", panel);
-  }
-
-  return `/home/places?${params.toString()}`;
-}
-
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel } = await searchParams;
+  const { page, panel, placeId } = await searchParams;
   const requestedPage = parsePageParam(page);
-  const isNewPlaceReviewPanel = getFirstParam(panel) === NEW_PLACE_REVIEW_PANEL;
+  const panelName = getFirstParam(panel);
+  const selectedPlaceId = getFirstParam(placeId);
+  const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
+  const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const placesResultPromise = getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
@@ -56,8 +57,11 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     tagGroupsPromise,
   ]);
   const markers = toPlaceMarkers(places);
-  const closePanelHref = getPlacesHref(pagination.page);
-  const newPlaceReviewHref = getPlacesHref(pagination.page, NEW_PLACE_REVIEW_PANEL);
+  const closePanelHref = buildPlacesHref({ page: pagination.page });
+  const newPlaceReviewHref = buildPlacesHref({
+    page: pagination.page,
+    panel: NEW_PLACE_REVIEW_PANEL,
+  });
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
@@ -74,7 +78,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       {/* <SearchFilterBar /> */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <p className="mt-1 text-sm text-slate-500">お店一覧 ({pagination.totalCount}件)</p>
-        <PlacesList places={places} />
+        <PlacesList places={places} currentPage={pagination.page} />
       </div>
       <PlacesPagination
         currentPage={pagination.page}
@@ -85,6 +89,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       {isNewPlaceReviewPanel && tagGroups ? (
         <NewPlaceReviewPanel tagGroups={tagGroups} closeHref={closePanelHref} />
       ) : null}
+      {isPlaceDetailPanel ? <PlaceDetailPanel closeHref={closePanelHref} /> : null}
     </div>
   );
 }

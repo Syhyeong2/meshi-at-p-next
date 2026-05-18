@@ -16,11 +16,13 @@ export function MapMarkersSync({ source, markers }: MapMarkersSyncProps) {
 
   useEffect(() => {
     setMarkers(source, markers);
+  }, [markers, setMarkers, source]);
 
+  useEffect(() => {
     return () => {
       clearMarkers(source);
     };
-  }, [clearMarkers, markers, setMarkers, source]);
+  }, [clearMarkers, source]);
 
   return null;
 }

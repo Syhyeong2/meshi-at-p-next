@@ -117,7 +117,7 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
     state.placeSuggestions.length === 0;
 
   return (
-    <div className="flex h-full max-h-[80vh] flex-col">
+    <div className="flex h-full flex-col">
       {/* フォーム中身：スクロールエリア */}
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
         {/* 1. お店検索エリア */}
@@ -197,7 +197,7 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
                 <img
                   src={state.selectedPlace.imageUrl}
                   alt=""
-                  className="aspect-[4/3] w-full rounded-lg object-cover"
+                  className="aspect-4/3 w-full rounded-lg object-cover"
                 />
                 <PhotoAttributions attributions={state.selectedPlace.photoAttributions ?? []} />
               </div>

@@ -3,15 +3,14 @@
 import Link from "next/link";
 
 import { useMapMarkerStore } from "@/stores";
-import { buildPlacesHref, PLACE_DETAIL_PANEL } from "@/features/places/panelLinks";
 import type { Place } from "@/features/places/types";
 
 type PlacesListProps = {
   places: Place[];
-  currentPage: number;
+  placeDetailHrefs: Record<string, string>;
 };
 
-export function PlacesList({ places, currentPage }: PlacesListProps) {
+export function PlacesList({ places, placeDetailHrefs }: PlacesListProps) {
   const selectedPlaceId = useMapMarkerStore((state) => state.selectedMarkerId);
   const selectPlace = useMapMarkerStore((state) => state.selectMarker);
 
@@ -32,11 +31,7 @@ export function PlacesList({ places, currentPage }: PlacesListProps) {
         return (
           <li key={place.id} className="border-b border-slate-200 py-3">
             <Link
-              href={buildPlacesHref({
-                page: currentPage,
-                panel: PLACE_DETAIL_PANEL,
-                placeId: place.id,
-              })}
+              href={placeDetailHrefs[place.id] ?? "/home/places"}
               scroll={false}
               aria-current={isSelected ? "true" : undefined}
               onClick={() => selectPlace(place.id)}

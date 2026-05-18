@@ -4,19 +4,14 @@ import { Plus } from "lucide-react";
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
 import { getPlacesAction } from "@/features/places/actions";
-import {
-  NewPlaceReviewPanel,
-  PlaceDetailPanel,
-} from "@/features/places/components/NewPlaceReviewPanel";
 import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
-import {
-  buildPlacesHref,
-  NEW_PLACE_REVIEW_PANEL,
-  PLACE_DETAIL_PANEL,
-} from "@/features/places/panelLinks";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { getTagGroupsAction } from "@/features/tag/actions";
+
+import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
+import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
+import { buildPlacesHref, NEW_PLACE_REVIEW_PANEL, PLACE_DETAIL_PANEL } from "./_panel/panelLinks";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -62,6 +57,16 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     page: pagination.page,
     panel: NEW_PLACE_REVIEW_PANEL,
   });
+  const placeDetailHrefs = Object.fromEntries(
+    places.map((place) => [
+      place.id,
+      buildPlacesHref({
+        page: pagination.page,
+        panel: PLACE_DETAIL_PANEL,
+        placeId: place.id,
+      }),
+    ])
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
@@ -78,7 +83,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       {/* <SearchFilterBar /> */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <p className="mt-1 text-sm text-slate-500">お店一覧 ({pagination.totalCount}件)</p>
-        <PlacesList places={places} currentPage={pagination.page} />
+        <PlacesList places={places} placeDetailHrefs={placeDetailHrefs} />
       </div>
       <PlacesPagination
         currentPage={pagination.page}

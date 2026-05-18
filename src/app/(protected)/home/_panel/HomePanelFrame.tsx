@@ -1,30 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
-import { ReviewForm } from "@/features/review/components/ReviewForm";
-import type { TagGroup } from "@/features/tag/types";
-
-type PanelFrameProps = {
+type HomePanelFrameProps = {
   title: string;
   closeHref: string;
   children: ReactNode;
 };
 
-type NewPlaceReviewPanelProps = {
-  tagGroups: TagGroup[];
-  closeHref: string;
-};
-
-type PlaceDetailPanelProps = {
-  closeHref: string;
-};
-
-function PanelFrame({ title, closeHref, children }: PanelFrameProps) {
+export function HomePanelFrame({ title, closeHref, children }: HomePanelFrameProps) {
   const portalRoot =
     typeof document === "undefined" ? null : document.getElementById("map-overlay-root");
 
@@ -52,28 +39,5 @@ function PanelFrame({ title, closeHref, children }: PanelFrameProps) {
       <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
     </section>,
     portalRoot
-  );
-}
-
-export function NewPlaceReviewPanel({ tagGroups, closeHref }: NewPlaceReviewPanelProps) {
-  const router = useRouter();
-
-  return (
-    <PanelFrame title="レビューを投稿" closeHref={closeHref}>
-      <ReviewForm
-        tagGroups={tagGroups}
-        onClose={() => router.replace(closeHref, { scroll: false })}
-      />
-    </PanelFrame>
-  );
-}
-
-export function PlaceDetailPanel({ closeHref }: PlaceDetailPanelProps) {
-  return (
-    <PanelFrame title="お店詳細" closeHref={closeHref}>
-      <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">
-        お店詳細パネル
-      </div>
-    </PanelFrame>
   );
 }

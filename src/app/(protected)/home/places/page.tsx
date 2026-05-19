@@ -103,7 +103,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         hasPreviousPage={pagination.hasPreviousPage}
         hasNextPage={pagination.hasNextPage}
       />
-      {isNewPlaceReviewPanel ? <NewPlaceReviewPanel closeHref={closePanelHref} /> : null}
+      {isNewPlaceReviewPanel ? (
+        <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
+      ) : null}
       {isPlaceDetailPanel && selectedPlaceId ? (
         <PlaceDetailPanel
           closeHref={closePanelHref}

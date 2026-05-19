@@ -16,19 +16,21 @@ import type { TagGroup } from "@/features/tag/types";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+import type { ExistingReviewPlaceMatch } from "@/features/review/actions";
 
-import { useReviewForm } from "../hooks/useReviewForm";
-
-interface PlaceInfo {
-  id?: string;
-  name: string;
-  address: string;
-}
+import {
+  useReviewForm,
+  type ReviewFormMode,
+  type ReviewFormPlaceInfo,
+} from "../hooks/useReviewForm";
 
 interface ReviewFormProps {
-  place?: PlaceInfo;
+  mode: ReviewFormMode;
+  place?: ReviewFormPlaceInfo;
   tagGroups?: TagGroup[];
   onClose: () => void;
+  onSuccess: (placeId: string) => void;
+  onExistingPlaceMatch?: (place: ExistingReviewPlaceMatch) => void;
 }
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -104,9 +106,50 @@ function PhotoAttributions({ attributions }: { attributions: GooglePlacePhotoAtt
   );
 }
 
-export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
-  const { state, handlers } = useReviewForm(place, tagGroups);
-  const isNewShop = !place;
+function ExistingPlaceMatchPrompt({
+  place,
+  onConfirm,
+  onCancel,
+}: {
+  place: ExistingReviewPlaceMatch;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <div className="space-y-1">
+        <p className="text-sm font-bold text-slate-950">
+          このお店はすでに登録されています。既存のお店にレビューを書きますか？
+        </p>
+        <p className="text-sm text-slate-600">{place.name}</p>
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" size="sm" className="h-9 flex-1" onClick={onConfirm}>
+          レビューを書く
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="h-9 flex-1" onClick={onCancel}>
+          別のお店を探す
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function ReviewForm({
+  mode,
+  place,
+  tagGroups,
+  onClose,
+  onSuccess,
+  onExistingPlaceMatch,
+}: ReviewFormProps) {
+  const { state, handlers } = useReviewForm({
+    mode,
+    place,
+    tagGroups,
+    onExistingPlaceMatch,
+  });
+  const isNewShop = mode === "new-place";
   const showSuggestions = isNewShop && state.placeSuggestions.length > 0;
   const showEmptyPlaceResult =
     isNewShop &&
@@ -179,6 +222,13 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
             )}
             {state.placeDetailsError && (
               <p className="text-sm font-medium text-red-500">{state.placeDetailsError}</p>
+            )}
+            {state.existingPlaceMatch && (
+              <ExistingPlaceMatchPrompt
+                place={state.existingPlaceMatch}
+                onConfirm={handlers.confirmExistingPlaceMatch}
+                onCancel={handlers.clearSelectedPlaceForSearch}
+              />
             )}
             {state.errors.place && (
               <p className="text-destructive text-sm font-medium text-red-500">
@@ -309,8 +359,8 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
         </Button>
         <Button
           className="bg-primary-linear h-11 flex-1 rounded-lg text-base text-white"
-          disabled={state.isPending}
-          onClick={() => handlers.onSubmit(onClose)}
+          disabled={state.isSubmitDisabled}
+          onClick={() => handlers.onSubmit(onSuccess)}
         >
           {state.isPending ? "送信中..." : "レビューを投稿する"}
         </Button>

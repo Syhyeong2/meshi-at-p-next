@@ -7,6 +7,7 @@ import { NewPlaceReviewPanelClient } from "./NewPlaceReviewPanelClient";
 
 type NewPlaceReviewPanelProps = {
   closeHref: string;
+  page: number;
 };
 
 function NewPlaceReviewPanelLoading() {
@@ -22,17 +23,17 @@ function NewPlaceReviewPanelLoading() {
   );
 }
 
-async function NewPlaceReviewPanelBody({ closeHref }: NewPlaceReviewPanelProps) {
+async function NewPlaceReviewPanelBody({ closeHref, page }: NewPlaceReviewPanelProps) {
   const tagGroups = await getTagGroupsAction();
 
-  return <NewPlaceReviewPanelClient tagGroups={tagGroups} closeHref={closeHref} />;
+  return <NewPlaceReviewPanelClient tagGroups={tagGroups} closeHref={closeHref} page={page} />;
 }
 
-export function NewPlaceReviewPanel({ closeHref }: NewPlaceReviewPanelProps) {
+export function NewPlaceReviewPanel({ closeHref, page }: NewPlaceReviewPanelProps) {
   return (
     <HomePanelFrame title="レビューを投稿" closeHref={closeHref}>
       <Suspense fallback={<NewPlaceReviewPanelLoading />}>
-        <NewPlaceReviewPanelBody closeHref={closeHref} />
+        <NewPlaceReviewPanelBody closeHref={closeHref} page={page} />
       </Suspense>
     </HomePanelFrame>
   );

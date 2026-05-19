@@ -1,12 +1,11 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
-import { Button } from "@/components/ui/Button";
 import { getPlaceAction } from "@/features/places/actions";
 import { toPlaceMarker } from "@/features/places/placeMarkers";
+import { getTagGroupsAction } from "@/features/tag/actions";
 
+import { ExistingPlaceReviewPanelClient } from "./ExistingPlaceReviewPanelClient";
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
 
 type ExistingPlaceReviewPanelProps = {
@@ -45,7 +44,7 @@ async function ExistingPlaceReviewBody({
   detailHref,
   placeId,
 }: Pick<ExistingPlaceReviewPanelProps, "detailHref" | "placeId">) {
-  const place = await getPlaceAction(placeId);
+  const [place, tagGroups] = await Promise.all([getPlaceAction(placeId), getTagGroupsAction()]);
 
   if (!place) {
     return <ExistingPlaceReviewNotFound placeId={placeId} />;
@@ -55,42 +54,28 @@ async function ExistingPlaceReviewBody({
     ...toPlaceMarker(place),
     href: detailHref,
   };
+  const reviewPlace = {
+    id: place.id,
+    googlePlaceId: place.googlePlaceId,
+    name: place.name,
+    address: null,
+    lat: place.lat,
+    lng: place.lng,
+    category: place.category,
+    imageUrl: place.imageUrl,
+    photoAttributions: place.photoAttributions,
+    distanceFromOfficeMeters: place.distanceFromOfficeMeters,
+    walkingDurationSeconds: place.walkingDurationSeconds,
+  };
 
   return (
     <>
       <MapMarkersSync source="place-detail" markers={[marker]} selectedMarkerId={place.id} />
-      <div className="h-full overflow-y-auto p-6">
-        <div className="space-y-5">
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="h-8 justify-start gap-2 px-0 text-xs"
-          >
-            <Link href={detailHref} scroll={false}>
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              お店詳細に戻る
-            </Link>
-          </Button>
-
-          <div>
-            <p className="text-xs font-bold text-slate-500">レビュー対象</p>
-            <h4 className="mt-1 text-lg font-bold break-words text-slate-950">{place.name}</h4>
-          </div>
-
-          <form className="space-y-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-            <div className="space-y-2">
-              <p className="text-sm font-bold text-slate-950">既存店舗レビュー投稿フォーム</p>
-              <p className="text-sm leading-6 text-slate-600">
-                テスト用のダミーテキストです。ここに既存DB店舗向けのレビュー作成フォームを接続します。
-              </p>
-            </div>
-            <Button type="button" disabled className="h-11 w-full text-base">
-              投稿フォーム準備中
-            </Button>
-          </form>
-        </div>
-      </div>
+      <ExistingPlaceReviewPanelClient
+        detailHref={detailHref}
+        place={reviewPlace}
+        tagGroups={tagGroups}
+      />
     </>
   );
 }

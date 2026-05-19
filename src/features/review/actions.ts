@@ -23,11 +23,38 @@ export type CreateReviewWithPlaceInput = {
   tagIds: string[];
 };
 
-export type CreateReviewWithPlaceResult =
+export type CreateReviewForExistingPlaceInput = {
+  placeId: string;
+  rating: number;
+  priceRange: number | null;
+  comment: string;
+  visitDate: string | null;
+  tagIds: string[];
+};
+
+export type CreateReviewResult =
   | {
       success: true;
       placeId: string;
       reviewId: string;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export type CreateReviewWithPlaceResult = CreateReviewResult;
+export type CreateReviewForExistingPlaceResult = CreateReviewResult;
+
+export type ExistingReviewPlaceMatch = {
+  id: string;
+  name: string;
+};
+
+export type FindPlaceIdByGooglePlaceIdResult =
+  | {
+      success: true;
+      place: ExistingReviewPlaceMatch | null;
     }
   | {
       success: false;
@@ -133,6 +160,118 @@ async function deleteReview(reviewId: string) {
   await supabase.from("reviews").delete().eq("id", reviewId);
 }
 
+function validateReviewInput(input: { rating: number; priceRange: number | null }): string | null {
+  if (!isRating(input.rating)) {
+    return "レートを選択してください。";
+  }
+
+  if (!isPriceRange(input.priceRange)) {
+    return "価格帯を選択してください。";
+  }
+
+  return null;
+}
+
+async function createReviewForPlace({
+  userId,
+  placeId,
+  rating,
+  priceRange,
+  comment,
+  visitDate,
+  tagIds,
+}: {
+  userId: string;
+  placeId: string;
+  rating: number;
+  priceRange: number | null;
+  comment: string;
+  visitDate: string | null;
+  tagIds: string[];
+}): Promise<{ placeId: string; reviewId: string }> {
+  const supabase = await createClient();
+  const { data: review, error: reviewError } = await supabase
+    .from("reviews")
+    .insert({
+      user_id: userId,
+      place_id: placeId,
+      rating,
+      price_range: priceRange,
+      comment: comment.trim() || null,
+      visited_at: normalizeVisitDate(visitDate),
+    })
+    .select("id")
+    .single();
+
+  if (reviewError) {
+    throw new Error("Failed to create review.");
+  }
+
+  const uniqueTagIds = Array.from(new Set(tagIds.filter(Boolean)));
+
+  if (uniqueTagIds.length > 0) {
+    const { error: reviewTagsError } = await supabase.from("review_tags").insert(
+      uniqueTagIds.map((tagId) => ({
+        review_id: review.id,
+        tag_id: tagId,
+      }))
+    );
+
+    if (reviewTagsError) {
+      await deleteReview(review.id);
+      throw new Error("Failed to create review tags.");
+    }
+  }
+
+  await refreshPlaceRating(placeId);
+  revalidatePath("/home/places");
+
+  return {
+    placeId,
+    reviewId: review.id,
+  };
+}
+
+export async function findPlaceIdByGooglePlaceIdAction(
+  googlePlaceId: string
+): Promise<FindPlaceIdByGooglePlaceIdResult> {
+  await requireActiveUser();
+
+  const normalizedGooglePlaceId = googlePlaceId.trim();
+
+  if (!normalizedGooglePlaceId) {
+    return { success: true, place: null };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: place, error } = await supabase
+      .from("places")
+      .select("id, name")
+      .eq("google_place_id", normalizedGooglePlaceId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error("Failed to find place.");
+    }
+
+    return {
+      success: true,
+      place: place
+        ? {
+            id: place.id,
+            name: place.name,
+          }
+        : null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "お店の情報を取得できませんでした。",
+    };
+  }
+}
+
 export async function createReviewWithPlaceAction(
   input: CreateReviewWithPlaceInput
 ): Promise<CreateReviewWithPlaceResult> {
@@ -156,57 +295,83 @@ export async function createReviewWithPlaceAction(
     return { success: false, error: "お店の情報を取得できませんでした。" };
   }
 
-  if (!isRating(input.rating)) {
-    return { success: false, error: "レートを選択してください。" };
-  }
+  const validationError = validateReviewInput(input);
 
-  if (!isPriceRange(input.priceRange)) {
-    return { success: false, error: "価格帯を選択してください。" };
+  if (validationError) {
+    return { success: false, error: validationError };
   }
 
   try {
     const placeId = await upsertPlaceFromGoogleDetails(input.place);
-    const supabase = await createClient();
-    const { data: review, error: reviewError } = await supabase
-      .from("reviews")
-      .insert({
-        user_id: user.userId,
-        place_id: placeId,
-        rating: input.rating,
-        price_range: input.priceRange,
-        comment: input.comment.trim() || null,
-        visited_at: normalizeVisitDate(input.visitDate),
-      })
-      .select("id")
-      .single();
-
-    if (reviewError) {
-      throw new Error("Failed to create review.");
-    }
-
-    const tagIds = Array.from(new Set(input.tagIds.filter(Boolean)));
-
-    if (tagIds.length > 0) {
-      const { error: reviewTagsError } = await supabase.from("review_tags").insert(
-        tagIds.map((tagId) => ({
-          review_id: review.id,
-          tag_id: tagId,
-        }))
-      );
-
-      if (reviewTagsError) {
-        await deleteReview(review.id);
-        throw new Error("Failed to create review tags.");
-      }
-    }
-
-    await refreshPlaceRating(placeId);
-    revalidatePath("/home/places");
+    const review = await createReviewForPlace({
+      userId: user.userId,
+      placeId,
+      rating: input.rating,
+      priceRange: input.priceRange,
+      comment: input.comment,
+      visitDate: input.visitDate,
+      tagIds: input.tagIds,
+    });
 
     return {
       success: true,
-      placeId,
-      reviewId: review.id,
+      placeId: review.placeId,
+      reviewId: review.reviewId,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "レビューの投稿に失敗しました。",
+    };
+  }
+}
+
+export async function createReviewForExistingPlaceAction(
+  input: CreateReviewForExistingPlaceInput
+): Promise<CreateReviewForExistingPlaceResult> {
+  const user = await requireActiveUser();
+  const placeId = input.placeId.trim();
+
+  if (!placeId) {
+    return { success: false, error: "お店を選択してください。" };
+  }
+
+  const validationError = validateReviewInput(input);
+
+  if (validationError) {
+    return { success: false, error: validationError };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: place, error: placeError } = await supabase
+      .from("places")
+      .select("id")
+      .eq("id", placeId)
+      .maybeSingle();
+
+    if (placeError) {
+      throw new Error("Failed to load place.");
+    }
+
+    if (!place) {
+      return { success: false, error: "お店が見つかりませんでした。" };
+    }
+
+    const review = await createReviewForPlace({
+      userId: user.userId,
+      placeId: place.id,
+      rating: input.rating,
+      priceRange: input.priceRange,
+      comment: input.comment,
+      visitDate: input.visitDate,
+      tagIds: input.tagIds,
+    });
+
+    return {
+      success: true,
+      placeId: review.placeId,
+      reviewId: review.reviewId,
     };
   } catch (error) {
     return {

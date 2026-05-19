@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Search, MapPin } from "lucide-react";
+import { LoaderCircle, Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -150,6 +150,7 @@ export function ReviewForm({
     onExistingPlaceMatch,
   });
   const isNewShop = mode === "new-place";
+  const isPlaceSearchLoading = state.isSearchingPlaces || state.isLoadingPlaceDetails;
   const showSuggestions = isNewShop && state.placeSuggestions.length > 0;
   const showEmptyPlaceResult =
     isNewShop &&
@@ -167,7 +168,17 @@ export function ReviewForm({
         {isNewShop && (
           <div className="space-y-2">
             <div className="relative">
-              <Search className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              {isPlaceSearchLoading ? (
+                <LoaderCircle
+                  className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 animate-spin text-gray-400"
+                  aria-label="読み込み中"
+                />
+              ) : (
+                <Search
+                  className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400"
+                  aria-hidden="true"
+                />
+              )}
               <Input
                 placeholder="お店を検索..."
                 value={state.placeSearchInput}
@@ -176,9 +187,6 @@ export function ReviewForm({
                 className="border-slate-300 pl-10 placeholder:text-slate-950"
               />
             </div>
-            {state.isSearchingPlaces && (
-              <p className="text-sm font-medium text-slate-500">候補を検索中...</p>
-            )}
             {state.placeSearchError && (
               <p className="text-sm font-medium text-red-500">{state.placeSearchError}</p>
             )}
@@ -216,9 +224,6 @@ export function ReviewForm({
                   );
                 })}
               </ul>
-            )}
-            {state.isLoadingPlaceDetails && (
-              <p className="text-sm font-medium text-slate-500">お店の詳細を取得中...</p>
             )}
             {state.placeDetailsError && (
               <p className="text-sm font-medium text-red-500">{state.placeDetailsError}</p>

@@ -119,7 +119,7 @@ export function useReviewForm({
   useEffect(() => {
     const normalizedInput = placeSearchInput.trim();
 
-    if (!isNewPlaceMode || selectedPlace || normalizedInput.length < 2) {
+    if (!isNewPlaceMode || selectedPlace || isLoadingPlaceDetails || normalizedInput.length < 2) {
       return;
     }
 
@@ -165,8 +165,9 @@ export function useReviewForm({
     return () => {
       window.clearTimeout(timeoutId);
       abortController.abort();
+      setIsSearchingPlaces(false);
     };
-  }, [isNewPlaceMode, placeSearchInput, placeSessionToken, selectedPlace]);
+  }, [isLoadingPlaceDetails, isNewPlaceMode, placeSearchInput, placeSessionToken, selectedPlace]);
 
   const setPlaceSearch = (value: string) => {
     placeDetailsAbortRef.current?.abort();
@@ -217,6 +218,7 @@ export function useReviewForm({
     setPlaceDetailsError(null);
     setSelectedPlace(undefined);
     setExistingPlaceMatch(null);
+    setIsSearchingPlaces(false);
     setIsLoadingPlaceDetails(true);
     clearMapMarkers("review-place");
 

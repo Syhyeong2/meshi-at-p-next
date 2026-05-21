@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import type { Place } from "@/features/places/types";
 import Image from "next/image";
 import { MapPin, SportShoe, Star } from "lucide-react";
@@ -14,16 +14,13 @@ type Props = {
   placeDetailHref: string;
 };
 
-const PlaceCard = React.forwardRef<HTMLLIElement, Props>(function PlaceCard(
-  { place, isSelected, onClick, placeDetailHref },
-  ref
-) {
+export default function PlaceCard({ place, isSelected, onClick, placeDetailHref }: Props) {
   const walkingDurationMinutes = getWalkingDurationMinutes(place.walkingDurationSeconds);
   const distanceLabel =
     place.distanceFromOfficeMeters === null ? "-" : `${place.distanceFromOfficeMeters}m`;
 
   return (
-    <li ref={ref} className="scroll-my-0.5">
+    <li>
       <Link
         href={placeDetailHref}
         scroll={false}
@@ -95,6 +92,4 @@ const PlaceCard = React.forwardRef<HTMLLIElement, Props>(function PlaceCard(
       </Link>
     </li>
   );
-});
-
-export default PlaceCard;
+}

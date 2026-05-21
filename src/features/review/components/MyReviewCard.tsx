@@ -3,17 +3,22 @@
 
 import { StarRating } from "@/features/review/components/StarRating";
 import { Tag } from "@/components/ui/Tag";
+import Link from "next/link";
 
-//テスト使用例:
-// import { MyReviewCard } from "@/features/review/components/MyReviewCard";
-// <MyReviewCard
-//   id="(uuid)"
-//   place="イタリアン トラットリア"
-//   rating={4}
-//   comment="とても静かなカフェで、集中して作業ができました！コーヒーも美味しかったです。ぎゃおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおおお。ペイペイ！"
-//   date={new Date()}
-//   tags={["kawaii", "おしゃれ", "1000-2000"]}
-// />
+/**
+ * テスト使用例:
+ * import { MyReviewCard } from "@/features/review/components/MyReviewCard";
+ * * <MyReviewCard
+ * id="review-123"
+ * place="イタリアン トラットリア"
+ * rating={4}
+ * comment="とても静かなカフェで、集中して作業ができました！"
+ * date={new Date()}
+ * tags={["おしゃれ", "ランチ"]}
+ * href="/home/mypage?panel=my-reviews&reviewId=review-123" // 遷移先URL (必須)
+ * isSelected={false} // 選択状態のハイライト表示 (必須)
+ * />
+ */
 
 // 型定義
 interface MyReviewCardProps {
@@ -23,29 +28,32 @@ interface MyReviewCardProps {
   tags: string[]; //タグたち
   comment: string; //コメント
   date: Date; //日付(created_at or visited_at)
-  onClick?: (id: string) => void;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+  href: string;
+  isSelected: boolean;
 }
 
 export const MyReviewCard = ({
-  id,
   place,
   rating,
   comment,
   date,
   tags,
-  onClick,
+  href,
+  isSelected,
 }: MyReviewCardProps) => {
   const formattedDate = new Date(date).toLocaleDateString("sv-SE");
 
   return (
-    <div
-      onClick={() => onClick?.(id)}
-      className={`bg-card flex cursor-pointer flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-all duration-200 hover:border hover:border-slate-100`}
+    <Link
+      href={href}
+      aria-current={isSelected ? "true" : undefined}
+      scroll={false}
+      className={`flex cursor-pointer flex-col gap-3 rounded-xl border p-3 ${isSelected ? "border-primary bg-primary-background" : "border-slate-200 bg-white hover:border-slate-100"}`}
     >
       {/* 店名と星を一列に */}
       <div className="flex items-center gap-3">
         <p className="text-sm font-semibold text-slate-900">{place}</p>
-        {/* 星（レート） */}
         <div className="ml-auto">
           <StarRating rating={rating} />
         </div>
@@ -59,7 +67,7 @@ export const MyReviewCard = ({
       </div>
 
       {/* 3行制限のコメント */}
-      <p className="line-clamp-1 text-xs leading-relaxed break-words whitespace-pre-wrap text-slate-700">
+      <p className="wrap-break-words line-clamp-1 text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
         {comment}
       </p>
 
@@ -67,6 +75,6 @@ export const MyReviewCard = ({
       <span className="text-muted-foreground text-xs font-medium text-slate-500">
         {formattedDate}
       </span>
-    </div>
+    </Link>
   );
 };

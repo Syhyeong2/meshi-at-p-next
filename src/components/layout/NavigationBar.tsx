@@ -43,7 +43,7 @@ export function NavigationSidebar() {
       />
       <div className="flex flex-col gap-4">
         {topLinks.map((link) => {
-          const isActive = pathname === link.href;
+          const isActive = pathname.startsWith(link.href);
           return (
             <Button
               key={link.href}

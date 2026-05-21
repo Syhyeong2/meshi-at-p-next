@@ -86,11 +86,10 @@ const PlaceCard = React.forwardRef<HTMLLIElement, Props>(function PlaceCard(
           </div>
           <div className="inline-flex gap-1">
             {place.category && <Tag variant="primary">{place.category}</Tag>}
-            {/* TODO : 価格帯タグデータ */}
+            {place.isGochimeshi === true && <Tag variant="secondary">ごちめし利用可</Tag>}
             {place.price_range && (
               <Tag variant="neutral">{getPriceRangeLabel(place.price_range)}</Tag>
             )}
-            {place.isGochimeshi === true && <Tag variant="neutral">ごちめし可</Tag>}
           </div>
         </div>
       </Link>

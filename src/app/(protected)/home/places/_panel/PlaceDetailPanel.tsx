@@ -188,16 +188,26 @@ function PopularReviewTagsSection({
   category,
   tags,
   price_range,
+  isGochimeshi,
 }: {
   category: string | null;
   tags: PlacePopularReviewTag[];
   price_range: number | null;
+  isGochimeshi: boolean | null;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
       <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
         <span>{category ?? "カテゴリ未設定"}</span>
       </Tag>
+      {isGochimeshi && (
+        <Tag
+          className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal"
+          variant="secondary"
+        >
+          <span>ごちめし利用可</span>
+        </Tag>
+      )}
       {price_range && (
         <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal" variant="neutral">
           <span>{getPriceRangeLabel(price_range)}</span>
@@ -207,7 +217,7 @@ function PopularReviewTagsSection({
         <Tag
           key={tag.id}
           className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal"
-          variant="secondary"
+          variant="tertiary"
         >
           {tag.emoji ? <span>{tag.emoji}</span> : null}
           <span>{tag.name}</span>
@@ -358,6 +368,7 @@ async function PlaceDetailExtras({
   placeId,
   category,
   price_range,
+  isGochimeshi,
   isBookmarked,
   bookmarkCount,
   reviewDetailHref,
@@ -366,6 +377,7 @@ async function PlaceDetailExtras({
   placeId: string;
   category: string | null;
   price_range: number | null;
+  isGochimeshi: boolean | null;
   isBookmarked: boolean;
   bookmarkCount: number;
   reviewDetailHref: (reviewId: string) => string;
@@ -384,6 +396,7 @@ async function PlaceDetailExtras({
         category={category}
         tags={popularReviewTags}
         price_range={price_range}
+        isGochimeshi={isGochimeshi}
       />
       <BusinessInfoSection
         details={googleBusinessDetails}
@@ -462,6 +475,7 @@ async function PlaceDetailBody({
             <PlaceDetailExtras
               placeId={place.id}
               category={place.category}
+              isGochimeshi={place.isGochimeshi}
               price_range={place.price_range}
               isBookmarked={place.isBookmarked}
               bookmarkCount={place.bookmarkCount}

@@ -169,7 +169,7 @@ export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: Explo
       <div className="flex flex-col gap-4 border-b border-slate-200 p-4">
         <div className="flex items-center justify-between gap-3">
           <h1 className="bg-primary-linear bg-clip-text text-4xl font-black text-transparent select-none">
-            Meshi At Play
+            Meshi At PLAY
           </h1>
         </div>
 

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meshi At Play",
-  applicationName: "Meshi At Play",
+  title: "Meshi At PLAY",
+  applicationName: "Meshi At PLAY",
   description: "社内向けの近場ごはんレビューサービス",
   robots: {
     index: false,

@@ -93,9 +93,11 @@ export const ReviewDetail = ({
       </div>
 
       {/* 3. コメントエリア */}
-      <p className="text-base leading-relaxed break-words whitespace-pre-wrap text-slate-700">
-        {comment}
-      </p>
+      {comment && comment.trim() !== "" && (
+        <p className="text-base leading-relaxed break-words whitespace-pre-wrap text-slate-700">
+          {comment}
+        </p>
+      )}
       {formattedVisitDate ? (
         <span className="mt-2 text-sm font-medium text-slate-400">{formattedVisitDate} 訪問</span>
       ) : null}
@@ -103,11 +105,13 @@ export const ReviewDetail = ({
       {/* 4. タグエリア */}
       <div className="flex flex-wrap gap-2">
         {priceRange ? <Tag variant="neutral">{getPriceRangeLabel(priceRange)}</Tag> : null}
-        {tags.map((tag) => (
-          <Tag key={tag} variant="primary">
-            {tag}
-          </Tag>
-        ))}
+        {tags &&
+          tags.length > 0 &&
+          tags.map((tag) => (
+            <Tag key={tag} variant="primary">
+              {tag}
+            </Tag>
+          ))}
       </div>
 
       {/* 5. フッター：いいね ＆ 削除アクション */}

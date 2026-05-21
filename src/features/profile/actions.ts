@@ -6,6 +6,10 @@ import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveUser } from "../auth/access";
 import { nicknameSchema } from "../auth/schema";
+import { createClient } from "@/lib/supabase/server";
+import { getBookmarkedPlacesAction } from "../places/actions";
+import { getUserReviewsAction } from "../review/actions";
+import { Place, PlaceReview } from "../places/types";
 
 const DUMMY_EMAIL_DOMAIN = "example.com";
 
@@ -15,6 +19,44 @@ function buildDummyEmail(nickname: string): string {
   return `${localPart}@${DUMMY_EMAIL_DOMAIN}`;
 }
 
+export type UserProfileData = {
+  stats: {
+    reviews: number;
+    bookmarks: number;
+  };
+  recentBookmarks: Place[];
+  recentReviews: PlaceReview[];
+};
+
+export async function getUserProfileStatsAction() {
+  const user = await requireActiveUser();
+  const supabase = await createClient();
+
+  const [reviewsCountResult, bookmarksCountResult, bookmarkedPlaces, myReviews] = await Promise.all(
+    [
+      supabase
+        .from("reviews")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.userId),
+      supabase
+        .from("place_bookmarks")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.userId),
+      getBookmarkedPlacesAction(3),
+      getUserReviewsAction(3),
+    ]
+  );
+
+  return {
+    user,
+    stats: {
+      reviews: reviewsCountResult.count ?? 0,
+      bookmarks: bookmarksCountResult.count ?? 0,
+    },
+    bookmarkedPlaces,
+    myReviews,
+  };
+}
 export type ProfileActionState = {
   error?: string;
   success?: boolean;

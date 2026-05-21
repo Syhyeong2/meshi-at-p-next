@@ -3,13 +3,15 @@ export const PLACE_DETAIL_PANEL = "place-detail";
 export const EXISTING_PLACE_REVIEW_PANEL = "existing-place-review";
 export const PLACE_REVIEWS_PANEL = "place-reviews";
 export const EDIT_PLACE_REVIEW_PANEL = "edit-place-review";
+export const MY_REVIEWS_PANEL = "my-reviews";
 
 export type PlacesPanel =
   | typeof NEW_PLACE_REVIEW_PANEL
   | typeof PLACE_DETAIL_PANEL
   | typeof EXISTING_PLACE_REVIEW_PANEL
   | typeof PLACE_REVIEWS_PANEL
-  | typeof EDIT_PLACE_REVIEW_PANEL;
+  | typeof EDIT_PLACE_REVIEW_PANEL
+  | typeof MY_REVIEWS_PANEL;
 
 type BuildPanelHrefOptions = {
   basePath?: string;
@@ -29,25 +31,37 @@ export function buildPanelHref(
     params.set("page", String(page));
   }
 
+  // パネルの設定
   if (panel) {
     params.set("panel", panel);
   } else {
     params.delete("panel");
   }
 
-  if (
-    (panel === PLACE_DETAIL_PANEL ||
-      panel === EXISTING_PLACE_REVIEW_PANEL ||
-      panel === PLACE_REVIEWS_PANEL ||
-      panel === EDIT_PLACE_REVIEW_PANEL) &&
-    placeId
-  ) {
+  // placeIdが必要、またはあっても良いパネル
+  const allowsPlaceId = [
+    PLACE_DETAIL_PANEL,
+    EXISTING_PLACE_REVIEW_PANEL,
+    PLACE_REVIEWS_PANEL,
+    EDIT_PLACE_REVIEW_PANEL,
+    MY_REVIEWS_PANEL,
+  ].includes(panel as PlacesPanel);
+
+  // EDIT_PLACE_REVIEW_PANEL かつ reviewId がある場合は、placeId は任意（mypage用）
+  const isOptionalPlaceId = panel === EDIT_PLACE_REVIEW_PANEL && reviewId;
+
+  if (allowsPlaceId && placeId) {
     params.set("placeId", placeId);
-  } else {
+  } else if (!allowsPlaceId || (isOptionalPlaceId && !placeId)) {
     params.delete("placeId");
   }
 
-  if ((panel === PLACE_REVIEWS_PANEL || panel === EDIT_PLACE_REVIEW_PANEL) && reviewId) {
+  // reviewIdが必要なパネル
+  const needsReviewId = [PLACE_REVIEWS_PANEL, MY_REVIEWS_PANEL, EDIT_PLACE_REVIEW_PANEL].includes(
+    panel as PlacesPanel
+  );
+
+  if (needsReviewId && reviewId) {
     params.set("reviewId", reviewId);
   } else {
     params.delete("reviewId");
@@ -56,9 +70,3 @@ export function buildPanelHref(
   const queryString = params.toString();
   return queryString ? `${basePath}?${queryString}` : basePath;
 }
-
-// 既存のコードとの互換性のためのエイリアス
-export const buildPlacesHref = (
-  baseParams: string | URLSearchParams,
-  options: { page: number; panel?: PlacesPanel; placeId?: string; reviewId?: string }
-) => buildPanelHref(baseParams, options);

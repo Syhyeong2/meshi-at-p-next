@@ -2,10 +2,9 @@ import { MapMarkersSync } from "@/components/google-maps";
 import { getPlacesAction } from "@/features/places/actions";
 import type { PlaceSort } from "@/features/places/actions";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
-import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlacesPanelManager } from "./_panel/PlacesPanelManager";
 import {
-  buildPlacesHref,
+  buildPanelHref,
   EXISTING_PLACE_REVIEW_PANEL,
   NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
@@ -110,7 +109,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   );
   const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
   const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
-  const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
     panelName === EXISTING_PLACE_REVIEW_PANEL && Boolean(selectedPlaceId);
@@ -126,13 +124,13 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     isGochimeshi: isGochimeshiSelected,
     sort: placeSort,
   });
-  const closePanelHref = buildPlacesHref(baseParams, { page: pagination.page });
-  const newPlaceReviewHref = buildPlacesHref(baseParams, {
+  const closePanelHref = buildPanelHref(baseParams, { page: pagination.page });
+  const newPlaceReviewHref = buildPanelHref(baseParams, {
     page: pagination.page,
     panel: NEW_PLACE_REVIEW_PANEL,
   });
   const buildPlaceDetailHref = (placeId: string) =>
-    buildPlacesHref(baseParams, {
+    buildPanelHref(baseParams, {
       page: pagination.page,
       panel: PLACE_DETAIL_PANEL,
       placeId,
@@ -154,6 +152,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       <MapMarkersSync source="places" markers={placeMarkers} selectedMarkerId={selectedMarkerId} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ExploreLeftPanel
+          placeId={placeId as string}
           places={places}
           pagination={pagination}
           newPlaceReviewHref={newPlaceReviewHref}
@@ -161,9 +160,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         />
         <Footer href={newPlaceReviewHref} submitText="新しいお店のレビューを書く" />
       </div>
-      {isNewPlaceReviewPanel ? (
-        <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
-      ) : null}
+
       <PlacesPanelManager
         basePath="/home/places"
         panel={panelName}

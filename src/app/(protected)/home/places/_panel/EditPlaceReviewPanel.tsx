@@ -7,26 +7,47 @@ import { EditPlaceReviewClient } from "./EditPlaceReviewPanelClient";
 
 type EditPlaceReviewPanelProps = {
   closeHref: string;
-  placeId: string;
+  placeId?: string;
   reviewId: string;
 };
 
 export async function EditPlaceReviewPanel({
   closeHref,
-  placeId,
+  placeId: initialPlaceId,
   reviewId,
 }: EditPlaceReviewPanelProps) {
-  const [reviewResult, place, tagGroups] = await Promise.all([
+  const [reviewResult, tagGroups] = await Promise.all([
     getReviewForEditAction(reviewId),
-    getPlaceAction(placeId),
     getTagGroupsAction(),
   ]);
 
-  if (!reviewResult.success || !place) {
+  if (!reviewResult.success) {
+    return (
+      <HomePanelFrame title="レビューの編集" closeHref={closeHref}>
+        <div className="flex-1 p-6 text-center font-bold text-red-500">{reviewResult.error}</div>
+      </HomePanelFrame>
+    );
+  }
+
+  const placeId = reviewResult.review.placeId || initialPlaceId;
+
+  if (!placeId) {
     return (
       <HomePanelFrame title="レビューの編集" closeHref={closeHref}>
         <div className="flex-1 p-6 text-center font-bold text-red-500">
-          {!reviewResult.success ? reviewResult.error : "お店のデータが見つかりませんでした。"}
+          お店のデータが見つかりませんでした。
+        </div>
+      </HomePanelFrame>
+    );
+  }
+
+  const place = await getPlaceAction(placeId);
+
+  if (!place) {
+    return (
+      <HomePanelFrame title="レビューの編集" closeHref={closeHref}>
+        <div className="flex-1 p-6 text-center font-bold text-red-500">
+          お店のデータが見つかりませんでした。
         </div>
       </HomePanelFrame>
     );

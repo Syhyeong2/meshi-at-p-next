@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef } from "react";
 import { useMapMarkerStore } from "@/stores";
 import type { Place } from "@/features/places/types";
 import PlaceCard from "./PlaceCard";
@@ -12,6 +13,25 @@ type PlaceListProps = {
 export function PlaceList({ places, placeDetailHrefs }: PlaceListProps) {
   const selectedPlaceId = useMapMarkerStore((state) => state.selectedMarkerId);
   const selectPlace = useMapMarkerStore((state) => state.selectMarker);
+  const placeItemRefs = useRef(new Map<string, HTMLLIElement>());
+  const placeIds = useMemo(() => places.map((place) => place.id).join("\n"), [places]);
+
+  useEffect(() => {
+    if (!selectedPlaceId) {
+      return;
+    }
+
+    const selectedItem = placeItemRefs.current.get(selectedPlaceId);
+
+    if (!selectedItem) {
+      return;
+    }
+
+    selectedItem.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [placeIds, selectedPlaceId]);
 
   if (places.length === 0) {
     return (
@@ -29,6 +49,13 @@ export function PlaceList({ places, placeDetailHrefs }: PlaceListProps) {
         return (
           <PlaceCard
             key={place.id}
+            ref={(node) => {
+              if (node) {
+                placeItemRefs.current.set(place.id, node);
+              } else {
+                placeItemRefs.current.delete(place.id);
+              }
+            }}
             place={place}
             isSelected={isSelected}
             onClick={() => selectPlace(place.id)}

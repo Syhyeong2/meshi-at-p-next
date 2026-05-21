@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Clock, MapPin, Phone, Star } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
+import { GoogleMapsAttribution } from "@/components/google-maps/GoogleMapsAttribution";
 import { Button } from "@/components/ui/Button";
 import { Tag } from "@/components/ui/Tag";
 import {
@@ -153,6 +154,7 @@ function BusinessInfoSection({
               </p>
             </div>
           </div>
+          <GoogleMapsAttribution className="-mb-1" />
           <div className="flex items-center gap-2">
             <BookmarkButton
               placeId={placeId}

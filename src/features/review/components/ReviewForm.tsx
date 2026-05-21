@@ -3,7 +3,8 @@
 import React from "react";
 
 import Image from "next/image";
-import { LoaderCircle, MapPin, Search, SportShoe } from "lucide-react";
+import { LoaderCircle, MapPin, Search } from "lucide-react";
+import { GoogleMapsAttribution } from "@/components/google-maps/GoogleMapsAttribution";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -21,7 +22,6 @@ import type { SignedGooglePlaceDetails } from "@/features/places/googlePlaces";
 import type { Place } from "@/features/places/types";
 import PlaceCard from "@/features/places/components/PlaceCard";
 import type { ExistingReviewPlaceMatch } from "@/features/review/actions";
-import { getWalkingDurationMinutes } from "@/lib/utils";
 
 import {
   useReviewForm,
@@ -140,43 +140,46 @@ function ReviewFormPlaceCard({
 
 function NewPlaceReviewFormCard({ place }: { place: ReviewFormSelectedPlace }) {
   const address = place.address?.trim() || "住所未設定";
-  const distance = formatDistance(place.distanceFromOfficeMeters ?? null) ?? "-";
-  const walkingDurationMinutes = getWalkingDurationMinutes(place.walkingDurationSeconds);
 
   return (
-    <div className="flex w-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
-      {place.imageUrl ? (
-        <Image
-          src={place.imageUrl}
-          alt="お店の写真"
-          width={96}
-          height={96}
-          className="aspect-square shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <div className="flex size-24 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
-          <MapPin className="size-7" aria-hidden="true" />
-          <span className="sr-only">お店の写真なし</span>
-        </div>
-      )}
+    <div>
+      <div className="flex w-full flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-4">
+          {place.imageUrl ? (
+            <Image
+              src={place.imageUrl}
+              alt="お店の写真"
+              width={96}
+              height={96}
+              className="aspect-square shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="flex size-24 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+              <MapPin className="size-7" aria-hidden="true" />
+              <span className="sr-only">お店の写真なし</span>
+            </div>
+          )}
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="min-w-0">
-          <p className="line-clamp-1 text-left text-lg font-semibold break-words text-slate-950">
-            {place.name}
-          </p>
-          <div className="mt-1 flex items-start gap-1.5 text-slate-500">
-            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <p className="line-clamp-2 text-sm leading-snug break-words">{address}</p>
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="min-w-0">
+              <p className="line-clamp-1 text-left text-lg font-semibold break-words text-slate-950">
+                {place.name}
+              </p>
+              <div className="mt-1 flex items-start gap-1.5 text-slate-500">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <p className="line-clamp-2 text-sm leading-snug break-words">{address}</p>
+              </div>
+            </div>
+
+            {place.category ? (
+              <div className="inline-flex gap-1">
+                <Tag variant="primary">{place.category}</Tag>
+              </div>
+            ) : null}
           </div>
         </div>
-
-        {place.category ? (
-          <div className="inline-flex gap-1">
-            <Tag variant="primary">{place.category}</Tag>
-          </div>
-        ) : null}
       </div>
+      <GoogleMapsAttribution className="mt-2" />
     </div>
   );
 }

@@ -1,1 +1,18 @@
+EXPECTED_NODE_VERSION="v24.15.0"
+EXPECTED_PNPM_VERSION="11.1.0"
+
+CURRENT_NODE_VERSION="$(node -v 2>/dev/null || true)"
+if [ "$CURRENT_NODE_VERSION" != "$EXPECTED_NODE_VERSION" ]; then
+  echo "Expected Node.js $EXPECTED_NODE_VERSION, but found ${CURRENT_NODE_VERSION:-none}."
+  echo "Run: nvm install && nvm use"
+  exit 1
+fi
+
+CURRENT_PNPM_VERSION="$(pnpm --version 2>/dev/null || true)"
+if [ "$CURRENT_PNPM_VERSION" != "$EXPECTED_PNPM_VERSION" ]; then
+  echo "Expected pnpm $EXPECTED_PNPM_VERSION, but found ${CURRENT_PNPM_VERSION:-none}."
+  echo "Run: corepack enable && corepack prepare pnpm@$EXPECTED_PNPM_VERSION --activate"
+  exit 1
+fi
+
 pnpm exec lint-staged

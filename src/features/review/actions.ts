@@ -61,6 +61,42 @@ export type FindPlaceIdByGooglePlaceIdResult =
       error: string;
     };
 
+export async function getUserReviewsAction(limit?: number) {
+  const user = await requireActiveUser();
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("reviews")
+    .select(
+      `
+        id, rating, comment, visited_at, created_at,
+        places(id, name),
+        review_tags(tags(id, name))
+      `
+    )
+    .eq("user_id", user.userId)
+    .order("created_at", { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error("レビューの取得に失敗しました。");
+  }
+
+  return data.map((review) => ({
+    id: review.id,
+    place: review.places?.name ?? "不明なお店",
+    rating: review.rating,
+    comment: review.comment,
+    date: review.visited_at ?? review.created_at,
+    tags: review.review_tags.map((rt) => (rt.tags as { name: string }).name),
+  }));
+}
+
 export async function toggleReviewLikeAction(reviewId: string, shouldLike: boolean): Promise<void> {
   const user = await requireActiveUser();
   const normalizedReviewId = reviewId.trim();

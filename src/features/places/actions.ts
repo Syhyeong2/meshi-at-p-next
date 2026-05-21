@@ -608,22 +608,9 @@ export async function getBookmarkedPlacesAction(limit?: number): Promise<Place[]
     .from("places")
     .select(
       `
-      id,
-      google_place_id,
-      name,
-      category,
-      price_range,
-      lat,
-      lng,
-      image_url,
-      photo_attributions,
-      is_gochimeshi,
-      avg_rating,
-      review_count,
-      distance_from_office_meters,
-      walking_duration_seconds,
-      place_bookmarks!inner(user_id, created_at)
-    `
+        *, 
+        place_bookmarks!inner(user_id, created_at)
+      `
     )
     .eq("place_bookmarks.user_id", userId)
     .order("created_at", { foreignTable: "place_bookmarks", ascending: false });

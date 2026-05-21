@@ -17,6 +17,12 @@ function isProtectedRoute(pathname: string): boolean {
   );
 }
 
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"));
+}
+
 function redirectWithSessionCookies(request: NextRequest, response: NextResponse, path: string) {
   const redirectResponse = NextResponse.redirect(new URL(path, request.url));
 
@@ -28,6 +34,14 @@ function redirectWithSessionCookies(request: NextRequest, response: NextResponse
 }
 
 export async function updateSession(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
+
+  if (isAuthRoute(pathname) && !hasSupabaseAuthCookie(request)) {
+    return NextResponse.next({
+      request,
+    });
+  }
+
   let response = NextResponse.next({
     request,
   });
@@ -60,7 +74,6 @@ export async function updateSession(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims.sub);
-  const { pathname, searchParams } = request.nextUrl;
 
   if (isProtectedRoute(pathname) && !isAuthenticated) {
     return redirectWithSessionCookies(request, response, "/login");

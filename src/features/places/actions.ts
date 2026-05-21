@@ -468,7 +468,7 @@ export async function getPlacesAction({
 export async function getPlaceAction(placeId: string): Promise<Place | null> {
   const normalizedPlaceId = placeId.trim();
 
-  if (!normalizedPlaceId) {
+  if (!isCanonicalUuid(normalizedPlaceId)) {
     return null;
   }
 
@@ -492,7 +492,7 @@ export async function getPlacePopularReviewTagsAction(
 ): Promise<PlacePopularReviewTag[]> {
   const normalizedPlaceId = placeId.trim();
 
-  if (!normalizedPlaceId) {
+  if (!isCanonicalUuid(normalizedPlaceId)) {
     return [];
   }
 
@@ -504,7 +504,7 @@ export async function getPlacePopularReviewTagsAction(
 export async function getPlaceReviewPreviewsAction(placeId: string): Promise<PlaceReviewPreview[]> {
   const normalizedPlaceId = placeId.trim();
 
-  if (!normalizedPlaceId) {
+  if (!isCanonicalUuid(normalizedPlaceId)) {
     return [];
   }
 
@@ -551,7 +551,7 @@ export async function getPlaceReviewAction(
   const normalizedPlaceId = placeId.trim();
   const normalizedReviewId = reviewId.trim();
 
-  if (!normalizedPlaceId || !normalizedReviewId) {
+  if (!isCanonicalUuid(normalizedPlaceId) || !isCanonicalUuid(normalizedReviewId)) {
     return null;
   }
 
@@ -583,7 +583,7 @@ export async function getPlaceReviewsAction(
 ): Promise<GetPlaceReviewsActionResult> {
   const normalizedPlaceId = placeId.trim();
 
-  if (!normalizedPlaceId) {
+  if (!isCanonicalUuid(normalizedPlaceId)) {
     return {
       reviews: [],
       hasMore: false,
@@ -644,7 +644,7 @@ export async function getPlaceGoogleBusinessDetailsAction(
 ): Promise<PlaceGoogleBusinessDetails | null> {
   const normalizedPlaceId = placeId.trim();
 
-  if (!normalizedPlaceId) {
+  if (!isCanonicalUuid(normalizedPlaceId)) {
     return null;
   }
 

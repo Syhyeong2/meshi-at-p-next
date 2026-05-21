@@ -34,3 +34,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Deployment Checklist
+
+- Disable public Supabase Auth signups in the hosted project as well as `supabase/config.toml`: `[auth].enable_signup = false` and `[auth.email].enable_signup = false`.
+- Apply database migrations before deploying app code that depends on `consume_invite_code_and_create_profile`.

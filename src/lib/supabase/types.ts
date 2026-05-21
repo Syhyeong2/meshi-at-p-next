@@ -345,6 +345,18 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      current_profile_is_active: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      consume_invite_code_and_create_profile: {
+        Args: {
+          p_code: string;
+          p_user_id: string;
+          p_nickname: string;
+        };
+        Returns: undefined;
+      };
       get_external_places_dump: {
         Args: Record<PropertyKey, never>;
         Returns: {

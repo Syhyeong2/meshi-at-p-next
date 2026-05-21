@@ -3,10 +3,12 @@ import {
   EXISTING_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
   PLACE_REVIEWS_PANEL,
+  EDIT_PLACE_REVIEW_PANEL,
 } from "./panelLinks";
 import { ExistingPlaceReviewPanel } from "./ExistingPlaceReviewPanel";
 import { PlaceDetailPanel } from "./PlaceDetailPanel";
 import { PlaceReviewsPanel } from "./PlaceReviewsPanel";
+import { EditPlaceReviewPanel } from "./EditPlaceReviewPanel";
 
 type PlacesPanelManagerProps = {
   basePath: string;
@@ -28,6 +30,8 @@ export function PlacesPanelManager({
   const isPlaceDetailPanel = panel === PLACE_DETAIL_PANEL && Boolean(placeId);
   const isExistingPlaceReviewPanel = panel === EXISTING_PLACE_REVIEW_PANEL && Boolean(placeId);
   const isPlaceReviewsPanel = panel === PLACE_REVIEWS_PANEL && Boolean(placeId);
+  const isEditPlaceReviewPanel =
+    panel === EDIT_PLACE_REVIEW_PANEL && Boolean(placeId) && Boolean(reviewId);
 
   if (!placeId) return null;
 
@@ -98,6 +102,29 @@ export function PlacesPanelManager({
           panel: PLACE_REVIEWS_PANEL,
           placeId,
         })}
+        editHrefTemplate={(rid: string) =>
+          buildPanelHref(baseParams, {
+            basePath,
+            page,
+            panel: EDIT_PLACE_REVIEW_PANEL,
+            placeId,
+            reviewId: rid,
+          })
+        }
+      />
+    );
+  }
+  if (isEditPlaceReviewPanel && reviewId) {
+    return (
+      <EditPlaceReviewPanel
+        closeHref={buildPanelHref(baseParams, {
+          basePath,
+          page,
+          panel: PLACE_REVIEWS_PANEL,
+          placeId,
+        })}
+        placeId={placeId}
+        reviewId={reviewId}
       />
     );
   }

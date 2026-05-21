@@ -1,10 +1,11 @@
 "use client";
 
-import { Trash2, User } from "lucide-react";
+import { Trash2, User, Pencil } from "lucide-react";
 import { StarRating } from "@/features/review/components/StarRating";
 import { LikeButton } from "@/features/review/components/LikeButton";
 import { Tag } from "@/components/ui/Tag";
 import { getPriceRangeLabel } from "@/lib/utils";
+import Link from "next/link";
 
 interface ReviewDetailProps {
   id: string;
@@ -27,6 +28,7 @@ interface ReviewDetailProps {
   // 権限・アクション用
   currentUserId?: string;
   authorId: string;
+  editHref?: string;
   onDelete?: (id: string) => void;
   onLikeToggle?: (id: string, newState: boolean) => Promise<void>;
 }
@@ -46,6 +48,7 @@ export const ReviewDetail = ({
   initialIsLiked,
   currentUserId,
   authorId,
+  editHref,
   onDelete,
   onLikeToggle,
 }: ReviewDetailProps) => {
@@ -63,7 +66,6 @@ export const ReviewDetail = ({
         <div className="flex items-center gap-3">
           {mode === "shop-detail" ? (
             <>
-              {/* アイコン部分の背景色やサイズ、良い感じですね！ */}
               <div className="bg-primary-background flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full">
                 <User size={18} className="text-primary" />
               </div>
@@ -73,6 +75,15 @@ export const ReviewDetail = ({
             <h2 className="text-xl font-bold text-slate-950">{place}</h2>
           )}
         </div>
+        {isOwner && editHref && (
+          <Link
+            href={editHref}
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-slate-300 transition-colors hover:bg-slate-50 hover:text-slate-600"
+            title="レビューを編集する"
+          >
+            <Pencil size={18} />
+          </Link>
+        )}
       </div>
 
       {/* 2. 評価エリア */}

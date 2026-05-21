@@ -2,12 +2,14 @@ export const NEW_PLACE_REVIEW_PANEL = "new-place-review";
 export const PLACE_DETAIL_PANEL = "place-detail";
 export const EXISTING_PLACE_REVIEW_PANEL = "existing-place-review";
 export const PLACE_REVIEWS_PANEL = "place-reviews";
+export const EDIT_PLACE_REVIEW_PANEL = "edit-place-review";
 
 export type PlacesPanel =
   | typeof NEW_PLACE_REVIEW_PANEL
   | typeof PLACE_DETAIL_PANEL
   | typeof EXISTING_PLACE_REVIEW_PANEL
-  | typeof PLACE_REVIEWS_PANEL;
+  | typeof PLACE_REVIEWS_PANEL
+  | typeof EDIT_PLACE_REVIEW_PANEL;
 
 type BuildPanelHrefOptions = {
   basePath?: string;
@@ -36,7 +38,8 @@ export function buildPanelHref(
   if (
     (panel === PLACE_DETAIL_PANEL ||
       panel === EXISTING_PLACE_REVIEW_PANEL ||
-      panel === PLACE_REVIEWS_PANEL) &&
+      panel === PLACE_REVIEWS_PANEL ||
+      panel === EDIT_PLACE_REVIEW_PANEL) &&
     placeId
   ) {
     params.set("placeId", placeId);
@@ -44,7 +47,7 @@ export function buildPanelHref(
     params.delete("placeId");
   }
 
-  if (panel === PLACE_REVIEWS_PANEL && reviewId) {
+  if ((panel === PLACE_REVIEWS_PANEL || panel === EDIT_PLACE_REVIEW_PANEL) && reviewId) {
     params.set("reviewId", reviewId);
   } else {
     params.delete("reviewId");

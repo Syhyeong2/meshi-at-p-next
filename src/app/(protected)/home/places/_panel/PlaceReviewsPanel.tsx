@@ -7,12 +7,15 @@ import { toPlaceMarker } from "@/features/places/placeMarkers";
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
 import { PlaceReviewsPanelClient } from "./PlaceReviewsPanelClient";
 
+import { requireActiveUser } from "@/features/auth/access";
+
 type PlaceReviewsPanelProps = {
   closeHref: string;
   detailHref: string;
   initialReviewId?: string;
   placeId: string;
   reviewsHref: string;
+  editHrefTemplate: (reviewId: string) => string;
 };
 
 function PlaceReviewsLoading() {
@@ -46,11 +49,18 @@ async function PlaceReviewsBody({
   initialReviewId,
   placeId,
   reviewsHref,
-}: Pick<PlaceReviewsPanelProps, "detailHref" | "initialReviewId" | "placeId" | "reviewsHref">) {
-  const [place, reviewsPage] = await Promise.all([
+  editHrefTemplate,
+}: Pick<
+  PlaceReviewsPanelProps,
+  "detailHref" | "initialReviewId" | "placeId" | "reviewsHref" | "editHrefTemplate"
+>) {
+  const [place, reviewsPage, user] = await Promise.all([
     getPlaceAction(placeId),
     getPlaceReviewsAction(placeId),
+    requireActiveUser(),
   ]);
+
+  const currentUserId = user.userId;
 
   if (!place) {
     return <PlaceReviewsNotFound placeId={placeId} />;
@@ -74,6 +84,8 @@ async function PlaceReviewsBody({
         reviews={reviewsPage.reviews}
         reviewsHref={reviewsHref}
         totalReviewCount={place.reviewCount}
+        currentUserId={currentUserId}
+        editHrefTemplate={editHrefTemplate("__REVIEW_ID__")}
       />
     </>
   );
@@ -85,6 +97,7 @@ export function PlaceReviewsPanel({
   initialReviewId,
   placeId,
   reviewsHref,
+  editHrefTemplate,
 }: PlaceReviewsPanelProps) {
   return (
     <HomePanelFrame title="社員レビュー" closeHref={closeHref}>
@@ -94,6 +107,7 @@ export function PlaceReviewsPanel({
           initialReviewId={initialReviewId}
           placeId={placeId}
           reviewsHref={reviewsHref}
+          editHrefTemplate={editHrefTemplate}
         />
       </Suspense>
     </HomePanelFrame>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -9,17 +10,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover
 import { getPlaceReviewsAction } from "@/features/places/actions";
 import type { PlaceReviewSort } from "@/features/places/actions";
 import type { PlaceReview } from "@/features/places/types";
+import { buildPlacesPanelHref, PLACE_REVIEWS_PANEL } from "@/features/places/placeQuery";
 import { ReviewCard } from "@/features/review/components/ReviewCard";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
-import { toggleReviewLikeAction } from "@/features/review/actions";
-import { deleteReviewAction } from "@/features/review/actions";
+import { deleteReviewAction, toggleReviewLikeAction } from "@/features/review/actions";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { createPortal } from "react-dom";
 
 type PlaceReviewsPanelClientProps = {
+  basePath: string;
   detailHref: string;
   hasMore: boolean;
   initialReviewId?: string;
+  initialSelectedReview: PlaceReview | null;
   nextOffset: number;
   placeName: string;
   placeId: string;
@@ -36,9 +39,11 @@ const REVIEW_SORT_OPTIONS: { label: string; value: PlaceReviewSort }[] = [
 ];
 
 export function PlaceReviewsPanelClient({
+  basePath,
   detailHref,
   hasMore: initialHasMore,
   initialReviewId,
+  initialSelectedReview,
   nextOffset: initialNextOffset,
   placeName,
   placeId,
@@ -48,6 +53,7 @@ export function PlaceReviewsPanelClient({
   currentUserId,
   editHrefTemplate,
 }: PlaceReviewsPanelClientProps) {
+  const router = useRouter();
   const [sort, setSort] = useState<PlaceReviewSort>("latest");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [reviewItems, setReviewItems] = useState(reviews);
@@ -55,12 +61,22 @@ export function PlaceReviewsPanelClient({
   const [nextOffset, setNextOffset] = useState(initialNextOffset);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSorting, setIsSorting] = useState(false);
-  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(initialReviewId ?? null);
-  const selectedReview = reviewItems.find((review) => review.id === selectedReviewId) ?? null;
-  const isReviewDetail = Boolean(selectedReview);
+  const [selectedReviewItem, setSelectedReviewItem] = useState(initialSelectedReview);
+  const selectedReview = initialReviewId
+    ? (reviewItems.find((review) => review.id === initialReviewId) ?? selectedReviewItem)
+    : null;
+  const isReviewDetail = Boolean(initialReviewId);
+  const isReviewNotFound = isReviewDetail && !selectedReview;
   const currentSortLabel =
     REVIEW_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "最新順";
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const getReviewDetailHref = (reviewId: string) =>
+    buildPlacesPanelHref(reviewsHref, {
+      basePath,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+      reviewId,
+    });
 
   const toggleLike = async (reviewId: string, newState: boolean) => {
     await toggleReviewLikeAction(reviewId, newState);
@@ -77,11 +93,17 @@ export function PlaceReviewsPanelClient({
         };
       })
     );
-  };
+    setSelectedReviewItem((currentReview) => {
+      if (currentReview?.id !== reviewId) {
+        return currentReview;
+      }
 
-  const showReviewList = () => {
-    setSelectedReviewId(null);
-    window.history.replaceState(null, "", reviewsHref);
+      return {
+        ...currentReview,
+        initialIsLiked: newState,
+        initialLikeCount: Math.max(0, currentReview.initialLikeCount + (newState ? 1 : -1)),
+      };
+    });
   };
 
   const loadMoreReviews = async () => {
@@ -125,7 +147,6 @@ export function PlaceReviewsPanelClient({
       });
 
       setSort(nextSort);
-      setSelectedReviewId(null);
       setReviewItems(reviewsPage.reviews);
       setHasMore(reviewsPage.hasMore);
       setNextOffset(reviewsPage.nextOffset);
@@ -137,14 +158,24 @@ export function PlaceReviewsPanelClient({
   const handleTrashClick = () => {
     setIsDeleteModalOpen(true);
   };
+
   const handleExecuteDelete = async () => {
-    if (!selectedReviewId) return;
-    const result = await deleteReviewAction(selectedReviewId);
+    if (!selectedReview?.id) {
+      return;
+    }
+
+    const deletedReviewId = selectedReview.id;
+    const result = await deleteReviewAction(deletedReviewId);
+
     if (!result.success) {
       throw new Error(result.error);
     }
-    setReviewItems((currentItems) => currentItems.filter((item) => item.id !== selectedReviewId));
-    setSelectedReviewId(null);
+
+    setReviewItems((currentItems) => currentItems.filter((item) => item.id !== deletedReviewId));
+    setSelectedReviewItem((currentReview) =>
+      currentReview?.id === deletedReviewId ? null : currentReview
+    );
+    router.replace(reviewsHref, { scroll: false });
   };
 
   return (
@@ -152,14 +183,15 @@ export function PlaceReviewsPanelClient({
       <div className="flex flex-none flex-col gap-3 border-b border-slate-100 p-4">
         {isReviewDetail ? (
           <Button
-            type="button"
+            asChild
             variant="ghost"
             size="sm"
             className="h-0 w-fit justify-start gap-2 self-start px-0 text-xs"
-            onClick={showReviewList}
           >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            全てのレビュー
+            <Link href={reviewsHref} replace scroll={false}>
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              全てのレビュー
+            </Link>
           </Button>
         ) : (
           <Button
@@ -248,6 +280,17 @@ export function PlaceReviewsPanelClient({
             onDelete={handleTrashClick}
           />
         </div>
+      ) : isReviewNotFound ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-sm text-slate-500">レビューが見つかりませんでした。</p>
+            <Button asChild variant="outline" size="sm">
+              <Link href={reviewsHref} replace scroll={false}>
+                全てのレビュー
+              </Link>
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
           {reviewItems.length > 0 ? (
@@ -260,8 +303,8 @@ export function PlaceReviewsPanelClient({
                   rating={review.rating}
                   comment={review.comment}
                   date={review.date}
+                  href={getReviewDetailHref(review.id)}
                   variant="reviewList"
-                  onClick={setSelectedReviewId}
                 />
               ))}
               {hasMore ? (

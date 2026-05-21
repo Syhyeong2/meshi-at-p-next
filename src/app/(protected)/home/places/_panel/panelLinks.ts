@@ -1,72 +1,36 @@
-export const NEW_PLACE_REVIEW_PANEL = "new-place-review";
-export const PLACE_DETAIL_PANEL = "place-detail";
-export const EXISTING_PLACE_REVIEW_PANEL = "existing-place-review";
-export const PLACE_REVIEWS_PANEL = "place-reviews";
-export const EDIT_PLACE_REVIEW_PANEL = "edit-place-review";
-export const MY_REVIEWS_PANEL = "my-reviews";
+import {
+  buildClosePlacesPanelHref,
+  buildPlacesPanelHref,
+  EDIT_PLACE_REVIEW_PANEL,
+  EXISTING_PLACE_REVIEW_PANEL,
+  MY_REVIEWS_PANEL,
+  NEW_PLACE_REVIEW_PANEL,
+  PLACE_DETAIL_PANEL,
+  PLACE_REVIEWS_PANEL,
+  type BuildPlacesPanelHrefOptions,
+  type PlacesPanel,
+  type PlacesSearchParamsInput,
+} from "@/features/places/placeQuery";
 
-export type PlacesPanel =
-  | typeof NEW_PLACE_REVIEW_PANEL
-  | typeof PLACE_DETAIL_PANEL
-  | typeof EXISTING_PLACE_REVIEW_PANEL
-  | typeof PLACE_REVIEWS_PANEL
-  | typeof EDIT_PLACE_REVIEW_PANEL
-  | typeof MY_REVIEWS_PANEL;
-
-type BuildPanelHrefOptions = {
-  basePath?: string;
-  page?: number;
-  panel?: PlacesPanel;
-  placeId?: string;
-  reviewId?: string;
+export {
+  EDIT_PLACE_REVIEW_PANEL,
+  EXISTING_PLACE_REVIEW_PANEL,
+  MY_REVIEWS_PANEL,
+  NEW_PLACE_REVIEW_PANEL,
+  PLACE_DETAIL_PANEL,
+  PLACE_REVIEWS_PANEL,
+  type PlacesPanel,
 };
 
+type BuildPanelHrefOptions = BuildPlacesPanelHrefOptions;
+
 export function buildPanelHref(
-  baseParams: string | URLSearchParams,
-  { basePath = "/home/places", page, panel, placeId, reviewId }: BuildPanelHrefOptions
+  baseParams: PlacesSearchParamsInput,
+  options: BuildPanelHrefOptions
 ): string {
-  const params = new URLSearchParams(baseParams);
-
-  if (page !== undefined) {
-    params.set("page", String(page));
-  }
-
-  // パネルの設定
-  if (panel) {
-    params.set("panel", panel);
-  } else {
-    params.delete("panel");
-  }
-
-  // placeIdが必要、またはあっても良いパネル
-  const allowsPlaceId = [
-    PLACE_DETAIL_PANEL,
-    EXISTING_PLACE_REVIEW_PANEL,
-    PLACE_REVIEWS_PANEL,
-    EDIT_PLACE_REVIEW_PANEL,
-    MY_REVIEWS_PANEL,
-  ].includes(panel as PlacesPanel);
-
-  // EDIT_PLACE_REVIEW_PANEL かつ reviewId がある場合は、placeId は任意（mypage用）
-  const isOptionalPlaceId = panel === EDIT_PLACE_REVIEW_PANEL && reviewId;
-
-  if (allowsPlaceId && placeId) {
-    params.set("placeId", placeId);
-  } else if (!allowsPlaceId || (isOptionalPlaceId && !placeId)) {
-    params.delete("placeId");
-  }
-
-  // reviewIdが必要なパネル
-  const needsReviewId = [PLACE_REVIEWS_PANEL, MY_REVIEWS_PANEL, EDIT_PLACE_REVIEW_PANEL].includes(
-    panel as PlacesPanel
-  );
-
-  if (needsReviewId && reviewId) {
-    params.set("reviewId", reviewId);
-  } else {
-    params.delete("reviewId");
-  }
-
-  const queryString = params.toString();
-  return queryString ? `${basePath}?${queryString}` : basePath;
+  return options.panel
+    ? buildPlacesPanelHref(baseParams, options)
+    : buildClosePlacesPanelHref(baseParams, options);
 }
+
+export const buildPlacesHref = buildPanelHref;

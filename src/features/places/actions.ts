@@ -41,6 +41,20 @@ const DEFAULT_PAGE_SIZE = 20;
 const POPULAR_REVIEW_TAGS_LIMIT = 4;
 const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
 const REVIEW_PAGE_SIZE = 10;
+const PLACE_REVIEW_SELECT_COLUMNS = `
+  id,
+  user_id,
+  rating,
+  price_range,
+  comment,
+  created_at,
+  visited_at,
+  profiles!reviews_user_id_fkey (
+    nickname
+  )
+`;
+
+type SupabaseAdminClient = ReturnType<typeof createAdminClient>;
 
 type GetPlacesActionParams = {
   page?: number;
@@ -233,6 +247,80 @@ function getReviewTagLabel(row: ReviewTagRow): string | null {
   return tag?.emoji ? `${tag.emoji} ${name}` : name;
 }
 
+async function hydratePlaceReviews(
+  admin: SupabaseAdminClient,
+  userId: string,
+  reviewRows: PlaceReviewRow[]
+): Promise<PlaceReview[]> {
+  if (reviewRows.length === 0) {
+    return [];
+  }
+
+  const reviewIds = reviewRows.map((review) => review.id);
+  const [reviewTagsResult, reviewLikesResult] = await Promise.all([
+    admin
+      .from("review_tags")
+      .select(
+        `
+          review_id,
+          tags!review_tags_tag_id_fkey (
+            name,
+            emoji
+          )
+        `
+      )
+      .in("review_id", reviewIds),
+    admin.from("review_likes").select("review_id, user_id").in("review_id", reviewIds),
+  ]);
+
+  if (reviewTagsResult.error) {
+    throw new Error("Failed to load review tags.");
+  }
+
+  if (reviewLikesResult.error) {
+    throw new Error("Failed to load review likes.");
+  }
+
+  const tagsByReviewId = new Map<string, string[]>();
+  const likeCountsByReviewId = new Map<string, number>();
+  const likedReviewIds = new Set<string>();
+
+  for (const reviewTag of (reviewTagsResult.data ?? []) as ReviewTagRow[]) {
+    const tagLabel = getReviewTagLabel(reviewTag);
+
+    if (!tagLabel) {
+      continue;
+    }
+
+    const tags = tagsByReviewId.get(reviewTag.review_id) ?? [];
+
+    tags.push(tagLabel);
+    tagsByReviewId.set(reviewTag.review_id, tags);
+  }
+
+  for (const like of (reviewLikesResult.data ?? []) as ReviewLikeRow[]) {
+    likeCountsByReviewId.set(like.review_id, (likeCountsByReviewId.get(like.review_id) ?? 0) + 1);
+
+    if (like.user_id === userId) {
+      likedReviewIds.add(like.review_id);
+    }
+  }
+
+  return reviewRows.map((review) => ({
+    id: review.id,
+    authorId: review.user_id,
+    authorName: getReviewAuthorName(review),
+    rating: review.rating,
+    priceRange: review.price_range,
+    comment: review.comment?.trim() || "",
+    date: review.created_at,
+    visitDate: review.visited_at,
+    tags: tagsByReviewId.get(review.id) ?? [],
+    initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
+    initialIsLiked: likedReviewIds.has(review.id),
+  }));
+}
+
 export async function getPlacesAction({
   page,
   pageSize,
@@ -405,6 +493,39 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
   }));
 }
 
+export async function getPlaceReviewAction(
+  placeId: string,
+  reviewId: string
+): Promise<PlaceReview | null> {
+  const normalizedPlaceId = placeId.trim();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!normalizedPlaceId || !normalizedReviewId) {
+    return null;
+  }
+
+  const user = await requireActiveUser();
+  const admin = createAdminClient();
+  const { data: review, error: reviewError } = await admin
+    .from("reviews")
+    .select(PLACE_REVIEW_SELECT_COLUMNS)
+    .eq("place_id", normalizedPlaceId)
+    .eq("id", normalizedReviewId)
+    .maybeSingle();
+
+  if (reviewError) {
+    throw new Error("Failed to load place review.");
+  }
+
+  if (!review) {
+    return null;
+  }
+
+  const [placeReview] = await hydratePlaceReviews(admin, user.userId, [review as PlaceReviewRow]);
+
+  return placeReview ?? null;
+}
+
 export async function getPlaceReviewsAction(
   placeId: string,
   { offset, limit, sort }: GetPlaceReviewsActionParams = {}
@@ -426,20 +547,7 @@ export async function getPlaceReviewsAction(
   const admin = createAdminClient();
   let reviewsQuery = admin
     .from("reviews")
-    .select(
-      `
-        id,
-        user_id,
-        rating,
-        price_range,
-        comment,
-        created_at,
-        visited_at,
-        profiles!reviews_user_id_fkey (
-          nickname
-        )
-      `
-    )
+    .select(PLACE_REVIEW_SELECT_COLUMNS)
     .eq("place_id", normalizedPlaceId);
 
   reviewsQuery =
@@ -471,70 +579,10 @@ export async function getPlaceReviewsAction(
     };
   }
 
-  const reviewIds = reviewRows.map((review) => review.id);
-  const [reviewTagsResult, reviewLikesResult] = await Promise.all([
-    admin
-      .from("review_tags")
-      .select(
-        `
-          review_id,
-          tags!review_tags_tag_id_fkey (
-            name,
-            emoji
-          )
-        `
-      )
-      .in("review_id", reviewIds),
-    admin.from("review_likes").select("review_id, user_id").in("review_id", reviewIds),
-  ]);
-
-  if (reviewTagsResult.error) {
-    throw new Error("Failed to load review tags.");
-  }
-
-  if (reviewLikesResult.error) {
-    throw new Error("Failed to load review likes.");
-  }
-
-  const tagsByReviewId = new Map<string, string[]>();
-  const likeCountsByReviewId = new Map<string, number>();
-  const likedReviewIds = new Set<string>();
-
-  for (const reviewTag of (reviewTagsResult.data ?? []) as ReviewTagRow[]) {
-    const tagLabel = getReviewTagLabel(reviewTag);
-
-    if (!tagLabel) {
-      continue;
-    }
-
-    const tags = tagsByReviewId.get(reviewTag.review_id) ?? [];
-
-    tags.push(tagLabel);
-    tagsByReviewId.set(reviewTag.review_id, tags);
-  }
-
-  for (const like of (reviewLikesResult.data ?? []) as ReviewLikeRow[]) {
-    likeCountsByReviewId.set(like.review_id, (likeCountsByReviewId.get(like.review_id) ?? 0) + 1);
-
-    if (like.user_id === user.userId) {
-      likedReviewIds.add(like.review_id);
-    }
-  }
+  const placeReviews = await hydratePlaceReviews(admin, user.userId, reviewRows);
 
   return {
-    reviews: reviewRows.map((review) => ({
-      id: review.id,
-      authorId: review.user_id,
-      authorName: getReviewAuthorName(review),
-      rating: review.rating,
-      priceRange: review.price_range,
-      comment: review.comment?.trim() || "",
-      date: review.created_at,
-      visitDate: review.visited_at,
-      tags: tagsByReviewId.get(review.id) ?? [],
-      initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
-      initialIsLiked: likedReviewIds.has(review.id),
-    })),
+    reviews: placeReviews,
     hasMore,
     nextOffset: normalizedOffset + reviewRows.length,
   };

@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 
 import { MapMarkersSync } from "@/components/google-maps";
-import { getPlaceAction, getPlaceReviewsAction } from "@/features/places/actions";
+import {
+  getPlaceAction,
+  getPlaceReviewAction,
+  getPlaceReviewsAction,
+} from "@/features/places/actions";
 import { toPlaceMarker } from "@/features/places/placeMarkers";
 
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
@@ -10,6 +14,7 @@ import { PlaceReviewsPanelClient } from "./PlaceReviewsPanelClient";
 import { requireActiveUser } from "@/features/auth/access";
 
 type PlaceReviewsPanelProps = {
+  basePath: string;
   closeHref: string;
   detailHref: string;
   initialReviewId?: string;
@@ -45,6 +50,7 @@ function PlaceReviewsNotFound({ placeId }: { placeId: string }) {
 }
 
 async function PlaceReviewsBody({
+  basePath,
   detailHref,
   initialReviewId,
   placeId,
@@ -52,11 +58,17 @@ async function PlaceReviewsBody({
   editHrefTemplate,
 }: Pick<
   PlaceReviewsPanelProps,
-  "detailHref" | "initialReviewId" | "placeId" | "reviewsHref" | "editHrefTemplate"
+  | "basePath"
+  | "detailHref"
+  | "initialReviewId"
+  | "placeId"
+  | "reviewsHref"
+  | "editHrefTemplate"
 >) {
-  const [place, reviewsPage, user] = await Promise.all([
+  const [place, reviewsPage, selectedReview, user] = await Promise.all([
     getPlaceAction(placeId),
     getPlaceReviewsAction(placeId),
+    initialReviewId ? getPlaceReviewAction(placeId, initialReviewId) : Promise.resolve(null),
     requireActiveUser(),
   ]);
 
@@ -75,9 +87,11 @@ async function PlaceReviewsBody({
     <>
       <MapMarkersSync source="place-detail" markers={[marker]} selectedMarkerId={place.id} />
       <PlaceReviewsPanelClient
+        basePath={basePath}
         detailHref={detailHref}
         hasMore={reviewsPage.hasMore}
         initialReviewId={initialReviewId}
+        initialSelectedReview={selectedReview}
         nextOffset={reviewsPage.nextOffset}
         placeName={place.name}
         placeId={place.id}
@@ -92,6 +106,7 @@ async function PlaceReviewsBody({
 }
 
 export function PlaceReviewsPanel({
+  basePath,
   closeHref,
   detailHref,
   initialReviewId,
@@ -103,6 +118,7 @@ export function PlaceReviewsPanel({
     <HomePanelFrame title="社員レビュー" closeHref={closeHref}>
       <Suspense key={`${placeId}:${initialReviewId ?? ""}`} fallback={<PlaceReviewsLoading />}>
         <PlaceReviewsBody
+          basePath={basePath}
           detailHref={detailHref}
           initialReviewId={initialReviewId}
           placeId={placeId}

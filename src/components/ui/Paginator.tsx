@@ -1,9 +1,9 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/Button";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
   <nav
@@ -84,18 +84,6 @@ const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof Pag
 );
 PaginationNext.displayName = "PaginationNext";
 
-const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<"span">) => (
-  <span
-    aria-hidden
-    className={cn("flex h-9 w-9 items-center justify-center", className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More pages</span>
-  </span>
-);
-PaginationEllipsis.displayName = "PaginationEllipsis";
-
 type PaginationProps = {
   pagination: {
     page: number;
@@ -103,8 +91,7 @@ type PaginationProps = {
     hasPreviousPage: boolean;
     hasNextPage: boolean;
   };
-  baseUrl: string;
-  queryString?: string;
+  getPageHref: (page: number) => string;
 };
 
 const MAX_VISIBLE_PAGES = 5;
@@ -117,19 +104,7 @@ function getVisiblePages(currentPage: number, totalPages: number): number[] {
   return Array.from({ length: visibleCount }, (_, index) => start + index);
 }
 
-function buildPageHref(baseUrl: string, queryString: string | undefined, page: number): string {
-  const params = new URLSearchParams(queryString);
-
-  params.set("page", String(page));
-  params.delete("panel");
-  params.delete("placeId");
-  params.delete("reviewId");
-
-  const nextQueryString = params.toString();
-  return nextQueryString ? `${baseUrl}?${nextQueryString}` : baseUrl;
-}
-
-export function Paginator({ pagination, baseUrl, queryString }: PaginationProps) {
+export function Paginator({ pagination, getPageHref }: PaginationProps) {
   const { page: currentPage, totalPages, hasPreviousPage, hasNextPage } = pagination;
   const visiblePages = getVisiblePages(currentPage, totalPages);
 
@@ -138,14 +113,14 @@ export function Paginator({ pagination, baseUrl, queryString }: PaginationProps)
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
-            href={hasPreviousPage ? buildPageHref(baseUrl, queryString, currentPage - 1) : "#"}
+            href={hasPreviousPage ? getPageHref(currentPage - 1) : "#"}
             className={!hasPreviousPage ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
         {visiblePages.map((p) => (
           <PaginationItem key={p}>
             <PaginationLink
-              href={buildPageHref(baseUrl, queryString, p)}
+              href={getPageHref(p)}
               isActive={p === currentPage}
               className="h-5 w-5 rounded-md"
             >
@@ -155,7 +130,7 @@ export function Paginator({ pagination, baseUrl, queryString }: PaginationProps)
         ))}
         <PaginationItem>
           <PaginationNext
-            href={hasNextPage ? buildPageHref(baseUrl, queryString, currentPage + 1) : "#"}
+            href={hasNextPage ? getPageHref(currentPage + 1) : "#"}
             className={!hasNextPage ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>

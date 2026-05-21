@@ -131,6 +131,7 @@ export function PlacesPanelManager({
   if (isPlaceReviewsPanel) {
     return (
       <PlaceReviewsPanel
+        basePath={basePath}
         closeHref={buildDetailHref(placeId)}
         detailHref={buildDetailHref(placeId)}
         initialReviewId={reviewId}

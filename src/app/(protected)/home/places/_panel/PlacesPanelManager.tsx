@@ -5,12 +5,14 @@ import {
   PLACE_DETAIL_PANEL,
   PLACE_REVIEWS_PANEL,
   EDIT_PLACE_REVIEW_PANEL,
+  MY_REVIEWS_PANEL,
 } from "./panelLinks";
 import { ExistingPlaceReviewPanel } from "./ExistingPlaceReviewPanel";
 import { PlaceDetailPanel } from "./PlaceDetailPanel";
 import { PlaceReviewsPanel } from "./PlaceReviewsPanel";
 import { EditPlaceReviewPanel } from "./EditPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./NewPlaceReviewPanel";
+import { MyPlaceReviewPanel } from "./MyPlaceReviewPanel";
 
 type PlacesPanelManagerProps = {
   basePath: string;
@@ -38,6 +40,37 @@ export function PlacesPanelManager({
   if (panel === NEW_PLACE_REVIEW_PANEL) {
     return <NewPlaceReviewPanel closeHref={closePanelHref} page={page as number} />;
   }
+  const isMyPlaceReviewPanel = panel === MY_REVIEWS_PANEL;
+
+  if (isMyPlaceReviewPanel && reviewId) {
+    return (
+      <MyPlaceReviewPanel
+        closeHref={closePanelHref}
+        reviewId={reviewId}
+        baseParams={baseParams}
+        basePath={basePath}
+      />
+    );
+  }
+
+  const isEditPlaceReviewPanel = panel === EDIT_PLACE_REVIEW_PANEL && Boolean(reviewId);
+
+  if (isEditPlaceReviewPanel && reviewId) {
+    const isMypage = basePath.startsWith("/home/mypage");
+    return (
+      <EditPlaceReviewPanel
+        closeHref={buildPanelHref(baseParams, {
+          basePath,
+          page,
+          panel: isMypage ? MY_REVIEWS_PANEL : PLACE_REVIEWS_PANEL,
+          placeId,
+          reviewId,
+        })}
+        placeId={placeId}
+        reviewId={reviewId}
+      />
+    );
+  }
 
   // placeIdが必須のパネル
   if (!placeId) return null;
@@ -45,7 +78,6 @@ export function PlacesPanelManager({
   const isPlaceDetailPanel = panel === PLACE_DETAIL_PANEL;
   const isExistingPlaceReviewPanel = panel === EXISTING_PLACE_REVIEW_PANEL;
   const isPlaceReviewsPanel = panel === PLACE_REVIEWS_PANEL;
-  const isEditPlaceReviewPanel = panel === EDIT_PLACE_REVIEW_PANEL && Boolean(reviewId);
 
   const buildDetailHref = (pid: string) =>
     buildPanelHref(baseParams, {
@@ -118,20 +150,6 @@ export function PlacesPanelManager({
             reviewId: rid,
           })
         }
-      />
-    );
-  }
-  if (isEditPlaceReviewPanel && reviewId) {
-    return (
-      <EditPlaceReviewPanel
-        closeHref={buildPanelHref(baseParams, {
-          basePath,
-          page,
-          panel: PLACE_REVIEWS_PANEL,
-          placeId,
-        })}
-        placeId={placeId}
-        reviewId={reviewId}
       />
     );
   }

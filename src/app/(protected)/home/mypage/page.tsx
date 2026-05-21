@@ -33,11 +33,10 @@ export default async function Mypage({ searchParams }: MypageProps) {
       placeId: pid,
     });
 
-  const buildReviewDetailHref = (pid: string, rid: string) =>
+  const buildReviewDetailHref = (rid: string) =>
     buildPanelHref("", {
       basePath: "/home/mypage",
       panel: MY_REVIEWS_PANEL,
-      placeId: pid,
       reviewId: rid,
     });
 
@@ -108,7 +107,7 @@ export default async function Mypage({ searchParams }: MypageProps) {
                   comment={review.comment || ""}
                   date={new Date(review.date)}
                   tags={review.tags}
-                  href={buildReviewDetailHref(review.place, review.id)}
+                  href={buildReviewDetailHref(review.id)}
                   isSelected={reviewId === review.id}
                 />
               ))}

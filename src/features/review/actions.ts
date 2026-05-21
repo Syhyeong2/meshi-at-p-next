@@ -90,6 +90,7 @@ export async function getUserReviewsAction(limit?: number) {
   return data.map((review) => ({
     id: review.id,
     place: review.places?.name ?? "不明なお店",
+    placeId: review.places?.id ?? "",
     rating: review.rating,
     comment: review.comment,
     date: review.visited_at ?? review.created_at,
@@ -628,5 +629,95 @@ export async function getReviewForEditAction(reviewId: string): Promise<GetRevie
       success: false,
       error: getCaughtReviewSubmissionMessage(error),
     };
+  }
+}
+
+export type GetReviewResult = {
+  id: string;
+  authorName: string;
+  authorId: string;
+  placeId: string;
+  rating: number;
+  priceRange: number | null;
+  date: string;
+  visitDate: string | null;
+  comment: string;
+  tags: string[];
+  initialLikeCount: number;
+  initialIsLiked: boolean;
+};
+
+export async function getReviewAction(reviewId: string): Promise<GetReviewResult | null> {
+  const user = await requireActiveUser();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!normalizedReviewId) return null;
+
+  try {
+    const supabase = await createClient();
+
+    const { data: review, error } = await supabase
+      .from("reviews")
+      .select(
+        `
+        id,
+        rating,
+        price_range,
+        comment,
+        visited_at,
+        created_at,
+        user_id,
+        place_id,
+        profiles!reviews_user_id_fkey (
+          nickname
+        ),
+        review_tags (
+          tags (
+            name,
+            emoji
+          )
+        ),
+        review_likes (
+          user_id
+        )
+      `
+      )
+      .eq("id", normalizedReviewId)
+      .maybeSingle();
+
+    if (error || !review) {
+      return null;
+    }
+
+    // いいね関連の加工)
+    const initialLikeCount = review.review_likes?.length ?? 0;
+    const initialIsLiked =
+      review.review_likes?.some((like) => like.user_id === user.userId) ?? false;
+
+    // タグの加工
+    const tags = review.review_tags
+      ?.map((rt) => {
+        const tag = rt.tags as { name: string; emoji: string | null } | null;
+        return tag ? (tag.emoji ? `${tag.emoji} ${tag.name}` : tag.name) : null;
+      })
+      .filter(Boolean) as string[];
+
+    return {
+      id: review.id,
+      authorId: review.user_id,
+      authorName: (review.profiles as { nickname: string } | null)?.nickname ?? "不明なユーザー",
+      placeId: review.place_id,
+      rating: review.rating,
+      priceRange: review.price_range,
+      comment: review.comment?.trim() || "",
+      date: review.created_at,
+      visitDate: review.visited_at,
+      tags,
+      initialLikeCount,
+      initialIsLiked,
+    };
+  } catch (err) {
+    console.error("getReviewAction error:", err);
+    return null;
   }
 }

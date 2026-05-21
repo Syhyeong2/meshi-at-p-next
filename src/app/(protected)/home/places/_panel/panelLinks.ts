@@ -38,22 +38,28 @@ export function buildPanelHref(
     params.delete("panel");
   }
 
-  // placeIdが必要なパネル
-  const needsPlaceId = [
+  // placeIdが必要、またはあっても良いパネル
+  const allowsPlaceId = [
     PLACE_DETAIL_PANEL,
     EXISTING_PLACE_REVIEW_PANEL,
     PLACE_REVIEWS_PANEL,
     EDIT_PLACE_REVIEW_PANEL,
+    MY_REVIEWS_PANEL,
   ].includes(panel as PlacesPanel);
 
-  if (needsPlaceId && placeId) {
+  // EDIT_PLACE_REVIEW_PANEL かつ reviewId がある場合は、placeId は任意（mypage用）
+  const isOptionalPlaceId = panel === EDIT_PLACE_REVIEW_PANEL && reviewId;
+
+  if (allowsPlaceId && placeId) {
     params.set("placeId", placeId);
-  } else {
+  } else if (!allowsPlaceId || (isOptionalPlaceId && !placeId)) {
     params.delete("placeId");
   }
 
   // reviewIdが必要なパネル
-  const needsReviewId = [PLACE_REVIEWS_PANEL, MY_REVIEWS_PANEL].includes(panel as PlacesPanel);
+  const needsReviewId = [PLACE_REVIEWS_PANEL, MY_REVIEWS_PANEL, EDIT_PLACE_REVIEW_PANEL].includes(
+    panel as PlacesPanel
+  );
 
   if (needsReviewId && reviewId) {
     params.set("reviewId", reviewId);

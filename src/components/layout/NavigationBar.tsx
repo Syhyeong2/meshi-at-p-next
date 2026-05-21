@@ -20,7 +20,11 @@ export function NavigationSidebar() {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logoutAction();
+    const result = await logoutAction();
+
+    if (result?.error) {
+      throw new Error(result.error);
+    }
   };
 
   return (
@@ -33,6 +37,8 @@ export function NavigationSidebar() {
         onOpenChange={setIsLogoutOpen}
         onConfirm={handleLogout}
         confirmText="ログアウト"
+        pendingText="ログアウト中..."
+        errorMessage="ログアウトに失敗しました。もう一度お試しください。"
         description="本当にログアウトしてもよろしいですか？"
       />
       <div className="flex flex-col gap-4">

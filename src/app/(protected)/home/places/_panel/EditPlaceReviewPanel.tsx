@@ -1,7 +1,17 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
+import { ReviewForm } from "@/features/review/components/ReviewForm";
+
+import { getReviewForEditAction } from "@/features/review/actions";
+import { getPlaceAction } from "@/features/places/actions";
+import { getTagGroupsAction } from "@/features/tag/actions";
+import { type TagGroup } from "@/features/tag/types";
+import { type ReviewFormPlaceInfo } from "@/features/review/hooks/useReviewForm";
 
 type EditPlaceReviewPanelProps = {
   closeHref: string;
@@ -12,47 +22,77 @@ type EditPlaceReviewPanelProps = {
 export function EditPlaceReviewPanel({ closeHref, placeId, reviewId }: EditPlaceReviewPanelProps) {
   const router = useRouter();
 
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [initialReviewData, setInitialReviewData] = useState<ReviewFormPlaceInfo | null>(null);
+
+  const [tagGroups, setTagGroups] = useState<TagGroup[]>([]);
+
+  useEffect(() => {
+    async function fetchFormRequiredData() {
+      setInitialLoading(true);
+      const [reviewResult, place, loadedTagGroups] = await Promise.all([
+        getReviewForEditAction(reviewId),
+        getPlaceAction(placeId),
+        getTagGroupsAction(),
+      ]);
+
+      if (reviewResult.success && place) {
+        if (loadedTagGroups) setTagGroups(loadedTagGroups);
+        setInitialReviewData({
+          id: place.id,
+          googlePlaceId: place.googlePlaceId,
+          name: place.name,
+          address: null,
+          imageUrl: place.imageUrl,
+          avgRating: place.avgRating,
+          reviewCount: place.reviewCount,
+          category: place.category,
+          distanceFromOfficeMeters: place.distanceFromOfficeMeters,
+          walkingDurationSeconds: place.walkingDurationSeconds,
+
+          reviewId: reviewId,
+          rating: reviewResult.review.rating,
+          comment: reviewResult.review.comment,
+          price_range: reviewResult.review.priceRange,
+          visitDate: reviewResult.review.visitedAt
+            ? new Date(reviewResult.review.visitedAt)
+            : undefined,
+          tagIds: reviewResult.review.tagIds,
+        });
+      } else {
+        setErrorMessage(
+          reviewResult.success ? "お店のデータが見つかりませんでした。" : reviewResult.error
+        );
+      }
+      setInitialLoading(false);
+    }
+    fetchFormRequiredData();
+  }, [reviewId, placeId]);
+
   return (
     <HomePanelFrame title="レビューの編集" closeHref={closeHref}>
-      <div className="animate-in slide-in-from-right flex h-full w-full flex-col justify-between border-l border-slate-200 bg-slate-50 p-6 shadow-lg duration-200">
-        {/* 疎通データ確認エリア */}
-        <div className="mt-6 flex flex-1 flex-col gap-4">
-          <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            <p className="font-bold">🛰️ 管制塔から届いたパラメーター情報：</p>
-            <p className="pt-1 font-mono text-xs">【店舗ID】: {placeId}</p>
-            <p className="font-mono text-xs">【レビューID】: {reviewId}</p>
+      <div className="flex h-full flex-col overflow-y-auto bg-white">
+        {initialLoading && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            <p className="text-xs text-slate-400">編集データを完全同期中...</p>
           </div>
+        )}
 
-          <div className="flex flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white p-6 text-center text-slate-400 shadow-sm">
-            <p className="mb-1 text-sm font-bold text-slate-600">
-              ここに本番用のフォームが降臨する
-            </p>
-            <p className="max-w-xs text-xs">
-              いま受け取ったレビューIDを使って、DBから過去のコメントや星評価をロードするロジックをこの後ここにガッチャンコするぞ！
-            </p>
-          </div>
-        </div>
+        {!initialLoading && errorMessage && (
+          <div className="flex-1 p-6 text-center font-bold text-red-500">{errorMessage}</div>
+        )}
 
-        {/* フッターボタンエリア */}
-        <div className="-mx-6 mt-auto -mb-6 flex gap-3 border-t border-slate-200 bg-white p-6 pt-4">
-          <button
-            type="button"
-            onClick={() => router.push(closeHref)}
-            className="flex-1 rounded-lg bg-slate-100 p-3 text-center text-sm font-bold text-slate-700 transition-all hover:bg-slate-200"
-          >
-            戻る
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              alert("テスト画面のため、まだ保存はできません！");
-              router.push(closeHref);
-            }}
-            className="flex-1 rounded-lg bg-blue-600 p-3 text-center text-sm font-bold text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700"
-          >
-            テスト完了
-          </button>
-        </div>
+        {!initialLoading && !errorMessage && initialReviewData && (
+          <ReviewForm
+            mode="edit"
+            place={initialReviewData}
+            tagGroups={tagGroups}
+            onClose={() => router.push(closeHref)}
+            onSuccess={() => router.push(closeHref)}
+          />
+        )}
       </div>
     </HomePanelFrame>
   );

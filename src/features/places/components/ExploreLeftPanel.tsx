@@ -74,8 +74,8 @@ export function ExploreLeftPanel({
     selectedCategories,
     isGochimeshi,
     sort,
-    listQueryString,
     selectedTags,
+    getPageHref,
     searchByKeyword,
     setRating,
     setPrice,
@@ -91,13 +91,6 @@ export function ExploreLeftPanel({
   const hasActiveFilters =
     price !== null || rating > 0 || selectedCategories.length > 0 || selectedTags.length > 0;
 
-  const [inputValue, setInputValue] = useState(keyword);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputValue(value);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       searchByKeyword(e.currentTarget.value);
@@ -105,8 +98,7 @@ export function ExploreLeftPanel({
   };
 
   const handleClear = () => {
-    setInputValue(""); // 入力欄を白紙に戻す
-    searchByKeyword(""); // URLも完全に初期状態へリセット！
+    searchByKeyword("");
   };
 
   const currentSortLabel =
@@ -210,7 +202,6 @@ export function ExploreLeftPanel({
               autoComplete="off"
               defaultValue={keyword}
               onKeyDown={handleKeyDown}
-              onChange={handleChange}
               className="border-slate-300 py-2 pr-4 pl-10 placeholder:text-slate-950"
             />
           </div>
@@ -321,7 +312,7 @@ export function ExploreLeftPanel({
               />
             </div>
           </div>
-          <Paginator pagination={pagination} baseUrl="/home/places" queryString={listQueryString} />
+          <Paginator pagination={pagination} getPageHref={getPageHref} />
         </>
       )}
     </div>

@@ -41,6 +41,21 @@ const DEFAULT_PAGE_SIZE = 20;
 const POPULAR_REVIEW_TAGS_LIMIT = 4;
 const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
 const REVIEW_PAGE_SIZE = 10;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PLACE_REVIEW_SELECT_COLUMNS = `
+  id,
+  user_id,
+  rating,
+  price_range,
+  comment,
+  created_at,
+  visited_at,
+  profiles!reviews_user_id_fkey (
+    nickname
+  )
+`;
+
+type SupabaseAdminClient = ReturnType<typeof createAdminClient>;
 
 type GetPlacesActionParams = {
   page?: number;
@@ -52,6 +67,16 @@ type GetPlacesActionParams = {
   tags?: string[];
   isGochimeshi?: boolean;
   sort?: PlaceSort;
+};
+
+type PlacesQueryFilters = Pick<
+  GetPlacesActionParams,
+  "keyword" | "rating" | "price" | "categories" | "tags" | "isGochimeshi"
+>;
+
+type PlacesSelectOptions = {
+  count?: "exact";
+  head?: boolean;
 };
 
 type GetPlaceReviewsActionParams = {
@@ -123,6 +148,26 @@ type ReviewLikeRow = {
   user_id: string;
 };
 
+type PlaceRow = {
+  id: string;
+  google_place_id: string;
+  name: string;
+  category: string | null;
+  price_range: number | null;
+  lat: number;
+  lng: number;
+  image_url: string | null;
+  photo_attributions: Json;
+  is_gochimeshi: boolean;
+  avg_rating: number;
+  review_count: number;
+  distance_from_office_meters: number | null;
+  walking_duration_seconds: number | null;
+  place_bookmarks?: { user_id: string }[] | { user_id: string } | null;
+};
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
   return Number.isInteger(value) && value && value > 0 ? value : fallback;
 }
@@ -133,6 +178,59 @@ function normalizeNonNegativeInteger(value: number | undefined, fallback: number
 
 function normalizePlaceSort(value: PlaceSort | undefined): PlaceSort {
   return value === "review_count" || value === "distance" ? value : "rating";
+}
+
+function isPositiveFiniteInteger(value: number | null | undefined): value is number {
+  return (
+    value !== null &&
+    value !== undefined &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value > 0
+  );
+}
+
+function isCanonicalUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
+function getPlacesSelectColumns(tags?: string[]): string {
+  const validTags = tags?.filter(isCanonicalUuid) ?? [];
+
+  return validTags.length > 0
+    ? `${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`
+    : PLACES_SELECT_COLUMNS;
+}
+
+function buildPlacesQuery(
+  supabase: SupabaseServerClient,
+  { keyword, rating, price, categories, tags, isGochimeshi }: PlacesQueryFilters,
+  selectOptions?: PlacesSelectOptions
+) {
+  const validTags = tags?.filter(isCanonicalUuid) ?? [];
+  let query = supabase.from("places").select(getPlacesSelectColumns(tags), selectOptions);
+
+  if (keyword && keyword.trim() !== "") {
+    query = query.ilike("name", `%${keyword.trim()}%`);
+  }
+
+  if (isPositiveFiniteInteger(rating)) {
+    query = query.gte("avg_rating", rating);
+  }
+  if (isPositiveFiniteInteger(price)) {
+    query = query.eq("price_range", price);
+  }
+  if (categories && categories.length > 0) {
+    query = query.in("category", categories);
+  }
+  if (isGochimeshi === true) {
+    query = query.eq("is_gochimeshi", true);
+  }
+  if (validTags.length > 0) {
+    query = query.in("reviews.review_tags.tag_id", validTags);
+  }
+
+  return query;
 }
 
 function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
@@ -160,26 +258,7 @@ function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
     .filter((attribution): attribution is GooglePlacePhotoAttribution => attribution !== null);
 }
 
-function toPlace(
-  place: {
-    id: string;
-    google_place_id: string;
-    name: string;
-    category: string | null;
-    price_range: number | null;
-    lat: number;
-    lng: number;
-    image_url: string | null;
-    photo_attributions: Json;
-    is_gochimeshi: boolean;
-    avg_rating: number;
-    review_count: number;
-    distance_from_office_meters: number | null;
-    walking_duration_seconds: number | null;
-    place_bookmarks?: { user_id: string }[] | { user_id: string } | null;
-  },
-  currentUserId?: string
-): Place {
+function toPlace(place: PlaceRow, currentUserId?: string): Place {
   const bookmarks = Array.isArray(place.place_bookmarks)
     ? place.place_bookmarks
     : place.place_bookmarks
@@ -233,242 +312,13 @@ function getReviewTagLabel(row: ReviewTagRow): string | null {
   return tag?.emoji ? `${tag.emoji} ${name}` : name;
 }
 
-export async function getPlacesAction({
-  page,
-  pageSize,
-  keyword,
-  rating,
-  price,
-  categories,
-  tags,
-  isGochimeshi,
-  sort,
-}: GetPlacesActionParams = {}): Promise<GetPlacesActionResult> {
-  const normalizedPage = normalizePositiveInteger(page, DEFAULT_PAGE);
-  const normalizedPageSize = normalizePositiveInteger(pageSize, DEFAULT_PAGE_SIZE);
-  const normalizedSort = normalizePlaceSort(sort);
-  const from = (normalizedPage - 1) * normalizedPageSize;
-  const to = from + normalizedPageSize - 1;
-
-  const supabase = await createClient();
-  let query = supabase.from("places").select(PLACES_SELECT_COLUMNS, { count: "exact" });
-
-  if (keyword && keyword.trim() !== "") {
-    query = query.ilike("name", `%${keyword.trim()}%`);
-  }
-
-  if (rating && rating > 0) {
-    query = query.gte("avg_rating", rating);
-  }
-  if (price !== undefined && price !== null) {
-    query = query.eq("price_range", price);
-  }
-  if (categories && categories.length > 0) {
-    query = query.in("category", categories);
-  }
-  if (isGochimeshi === true) {
-    query = query.eq("is_gochimeshi", true);
-  }
-  if (tags && tags.length > 0) {
-    query = query.select(`${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`);
-    query = query.in("reviews.review_tags.tag_id", tags);
-  }
-
-  if (normalizedSort === "review_count") {
-    query = query
-      .order("review_count", { ascending: false })
-      .order("avg_rating", { ascending: false });
-  } else if (normalizedSort === "distance") {
-    query = query
-      .order("distance_from_office_meters", { ascending: true, nullsFirst: false })
-      .order("avg_rating", { ascending: false });
-  } else {
-    query = query
-      .order("avg_rating", { ascending: false })
-      .order("review_count", { ascending: false });
-  }
-
-  const { data, error, count } = await query.order("id", { ascending: true }).range(from, to);
-
-  if (error) {
-    console.error("【Supabaseデバッグ】エラーの全貌:", error);
-    throw new Error("Failed to load places.");
-  }
-
-  const totalCount = count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / normalizedPageSize));
-
-  if (normalizedPage > totalPages) {
-    return getPlacesAction({
-      page: totalPages,
-      pageSize: normalizedPageSize,
-      keyword,
-      rating,
-      price,
-      categories,
-      tags,
-      isGochimeshi,
-      sort: normalizedSort,
-    });
-  }
-
-  const { userId } = await requireActiveUser();
-  return {
-    places: data.map((p) => toPlace(p, userId)),
-    pagination: {
-      page: normalizedPage,
-      pageSize: normalizedPageSize,
-      totalCount,
-      totalPages,
-      hasPreviousPage: normalizedPage > 1,
-      hasNextPage: normalizedPage < totalPages,
-    },
-  };
-}
-
-export async function getPlaceAction(placeId: string): Promise<Place | null> {
-  const normalizedPlaceId = placeId.trim();
-
-  if (!normalizedPlaceId) {
-    return null;
-  }
-
-  const { userId } = await requireActiveUser();
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("places")
-    .select(PLACES_SELECT_COLUMNS)
-    .eq("id", normalizedPlaceId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error("Failed to load place.");
-  }
-
-  return data ? toPlace(data, userId) : null;
-}
-
-export async function getPlacePopularReviewTagsAction(
-  placeId: string
-): Promise<PlacePopularReviewTag[]> {
-  const normalizedPlaceId = placeId.trim();
-
-  if (!normalizedPlaceId) {
-    return [];
-  }
-
-  const supabase = await createClient();
-
-  return getPlacePopularReviewTags(supabase, normalizedPlaceId, POPULAR_REVIEW_TAGS_LIMIT);
-}
-
-export async function getPlaceReviewPreviewsAction(placeId: string): Promise<PlaceReviewPreview[]> {
-  const normalizedPlaceId = placeId.trim();
-
-  if (!normalizedPlaceId) {
-    return [];
-  }
-
-  await requireActiveUser();
-
-  const admin = createAdminClient();
-  const { data: reviews, error: reviewsError } = await admin
-    .from("reviews")
-    .select(
-      `
-        id,
-        rating,
-        comment,
-        created_at,
-        profiles!reviews_user_id_fkey (
-          nickname
-        )
-      `
-    )
-    .eq("place_id", normalizedPlaceId)
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: true })
-    .limit(PLACE_REVIEW_PREVIEWS_LIMIT);
-
-  if (reviewsError) {
-    throw new Error("Failed to load review previews.");
-  }
-
-  const reviewRows = (reviews ?? []) as ReviewPreviewRow[];
-
-  return reviewRows.map((review) => ({
-    id: review.id,
-    authorName: getReviewAuthorName(review),
-    rating: review.rating,
-    comment: review.comment?.trim() || "",
-    date: review.created_at,
-  }));
-}
-
-export async function getPlaceReviewsAction(
-  placeId: string,
-  { offset, limit, sort }: GetPlaceReviewsActionParams = {}
-): Promise<GetPlaceReviewsActionResult> {
-  const normalizedPlaceId = placeId.trim();
-
-  if (!normalizedPlaceId) {
-    return {
-      reviews: [],
-      hasMore: false,
-      nextOffset: 0,
-    };
-  }
-
-  const normalizedOffset = normalizeNonNegativeInteger(offset, 0);
-  const normalizedLimit = normalizePositiveInteger(limit, REVIEW_PAGE_SIZE);
-  const normalizedSort: PlaceReviewSort = sort === "rating" ? "rating" : "latest";
-  const user = await requireActiveUser();
-  const admin = createAdminClient();
-  let reviewsQuery = admin
-    .from("reviews")
-    .select(
-      `
-        id,
-        user_id,
-        rating,
-        price_range,
-        comment,
-        created_at,
-        visited_at,
-        profiles!reviews_user_id_fkey (
-          nickname
-        )
-      `
-    )
-    .eq("place_id", normalizedPlaceId);
-
-  reviewsQuery =
-    normalizedSort === "rating"
-      ? reviewsQuery
-          .order("rating", { ascending: false })
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: true })
-      : reviewsQuery.order("created_at", { ascending: false }).order("id", { ascending: true });
-
-  const { data: reviews, error: reviewsError } = await reviewsQuery.range(
-    normalizedOffset,
-    normalizedOffset + normalizedLimit
-  );
-
-  if (reviewsError) {
-    throw new Error("Failed to load place reviews.");
-  }
-
-  const fetchedReviewRows = (reviews ?? []) as PlaceReviewRow[];
-  const hasMore = fetchedReviewRows.length > normalizedLimit;
-  const reviewRows = fetchedReviewRows.slice(0, normalizedLimit);
-
+async function hydratePlaceReviews(
+  admin: SupabaseAdminClient,
+  userId: string,
+  reviewRows: PlaceReviewRow[]
+): Promise<PlaceReview[]> {
   if (reviewRows.length === 0) {
-    return {
-      reviews: [],
-      hasMore: false,
-      nextOffset: normalizedOffset,
-    };
+    return [];
   }
 
   const reviewIds = reviewRows.map((review) => review.id);
@@ -516,25 +366,274 @@ export async function getPlaceReviewsAction(
   for (const like of (reviewLikesResult.data ?? []) as ReviewLikeRow[]) {
     likeCountsByReviewId.set(like.review_id, (likeCountsByReviewId.get(like.review_id) ?? 0) + 1);
 
-    if (like.user_id === user.userId) {
+    if (like.user_id === userId) {
       likedReviewIds.add(like.review_id);
     }
   }
 
+  return reviewRows.map((review) => ({
+    id: review.id,
+    authorId: review.user_id,
+    authorName: getReviewAuthorName(review),
+    rating: review.rating,
+    priceRange: review.price_range,
+    comment: review.comment?.trim() || "",
+    date: review.created_at,
+    visitDate: review.visited_at,
+    tags: tagsByReviewId.get(review.id) ?? [],
+    initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
+    initialIsLiked: likedReviewIds.has(review.id),
+  }));
+}
+
+export async function getPlacesAction({
+  page,
+  pageSize,
+  keyword,
+  rating,
+  price,
+  categories,
+  tags,
+  isGochimeshi,
+  sort,
+}: GetPlacesActionParams = {}): Promise<GetPlacesActionResult> {
+  const normalizedPage = normalizePositiveInteger(page, DEFAULT_PAGE);
+  const normalizedPageSize = normalizePositiveInteger(pageSize, DEFAULT_PAGE_SIZE);
+  const normalizedSort = normalizePlaceSort(sort);
+  const supabase = await createClient();
+  const filters = {
+    keyword,
+    rating,
+    price,
+    categories,
+    tags,
+    isGochimeshi,
+  };
+
+  const { error: countError, count } = await buildPlacesQuery(supabase, filters, {
+    count: "exact",
+    head: true,
+  });
+
+  if (countError) {
+    console.error("【Supabaseデバッグ】エラーの全貌:", countError);
+    throw new Error("Failed to load places.");
+  }
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / normalizedPageSize));
+  const safePage = Math.min(normalizedPage, totalPages);
+  const from = (safePage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  let query = buildPlacesQuery(supabase, filters);
+
+  if (normalizedSort === "review_count") {
+    query = query
+      .order("review_count", { ascending: false })
+      .order("avg_rating", { ascending: false });
+  } else if (normalizedSort === "distance") {
+    query = query
+      .order("distance_from_office_meters", { ascending: true, nullsFirst: false })
+      .order("avg_rating", { ascending: false });
+  } else {
+    query = query
+      .order("avg_rating", { ascending: false })
+      .order("review_count", { ascending: false });
+  }
+
+  const { data, error } = await query.order("id", { ascending: true }).range(from, to);
+
+  if (error) {
+    console.error("【Supabaseデバッグ】エラーの全貌:", error);
+    throw new Error("Failed to load places.");
+  }
+
+  const { userId } = await requireActiveUser();
+  const placeRows = (data ?? []) as unknown as PlaceRow[];
+
   return {
-    reviews: reviewRows.map((review) => ({
-      id: review.id,
-      authorId: review.user_id,
-      authorName: getReviewAuthorName(review),
-      rating: review.rating,
-      priceRange: review.price_range,
-      comment: review.comment?.trim() || "",
-      date: review.created_at,
-      visitDate: review.visited_at,
-      tags: tagsByReviewId.get(review.id) ?? [],
-      initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
-      initialIsLiked: likedReviewIds.has(review.id),
-    })),
+    places: placeRows.map((p) => toPlace(p, userId)),
+    pagination: {
+      page: safePage,
+      pageSize: normalizedPageSize,
+      totalCount,
+      totalPages,
+      hasPreviousPage: safePage > 1,
+      hasNextPage: safePage < totalPages,
+    },
+  };
+}
+
+export async function getPlaceAction(placeId: string): Promise<Place | null> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!isCanonicalUuid(normalizedPlaceId)) {
+    return null;
+  }
+
+  const { userId } = await requireActiveUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("places")
+    .select(PLACES_SELECT_COLUMNS)
+    .eq("id", normalizedPlaceId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Failed to load place.");
+  }
+
+  return data ? toPlace(data, userId) : null;
+}
+
+export async function getPlacePopularReviewTagsAction(
+  placeId: string
+): Promise<PlacePopularReviewTag[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!isCanonicalUuid(normalizedPlaceId)) {
+    return [];
+  }
+
+  const supabase = await createClient();
+
+  return getPlacePopularReviewTags(supabase, normalizedPlaceId, POPULAR_REVIEW_TAGS_LIMIT);
+}
+
+export async function getPlaceReviewPreviewsAction(placeId: string): Promise<PlaceReviewPreview[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!isCanonicalUuid(normalizedPlaceId)) {
+    return [];
+  }
+
+  await requireActiveUser();
+
+  const admin = createAdminClient();
+  const { data: reviews, error: reviewsError } = await admin
+    .from("reviews")
+    .select(
+      `
+        id,
+        rating,
+        comment,
+        created_at,
+        profiles!reviews_user_id_fkey (
+          nickname
+        )
+      `
+    )
+    .eq("place_id", normalizedPlaceId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(PLACE_REVIEW_PREVIEWS_LIMIT);
+
+  if (reviewsError) {
+    throw new Error("Failed to load review previews.");
+  }
+
+  const reviewRows = (reviews ?? []) as ReviewPreviewRow[];
+
+  return reviewRows.map((review) => ({
+    id: review.id,
+    authorName: getReviewAuthorName(review),
+    rating: review.rating,
+    comment: review.comment?.trim() || "",
+    date: review.created_at,
+  }));
+}
+
+export async function getPlaceReviewAction(
+  placeId: string,
+  reviewId: string
+): Promise<PlaceReview | null> {
+  const normalizedPlaceId = placeId.trim();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!isCanonicalUuid(normalizedPlaceId) || !isCanonicalUuid(normalizedReviewId)) {
+    return null;
+  }
+
+  const user = await requireActiveUser();
+  const admin = createAdminClient();
+  const { data: review, error: reviewError } = await admin
+    .from("reviews")
+    .select(PLACE_REVIEW_SELECT_COLUMNS)
+    .eq("place_id", normalizedPlaceId)
+    .eq("id", normalizedReviewId)
+    .maybeSingle();
+
+  if (reviewError) {
+    throw new Error("Failed to load place review.");
+  }
+
+  if (!review) {
+    return null;
+  }
+
+  const [placeReview] = await hydratePlaceReviews(admin, user.userId, [review as PlaceReviewRow]);
+
+  return placeReview ?? null;
+}
+
+export async function getPlaceReviewsAction(
+  placeId: string,
+  { offset, limit, sort }: GetPlaceReviewsActionParams = {}
+): Promise<GetPlaceReviewsActionResult> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!isCanonicalUuid(normalizedPlaceId)) {
+    return {
+      reviews: [],
+      hasMore: false,
+      nextOffset: 0,
+    };
+  }
+
+  const normalizedOffset = normalizeNonNegativeInteger(offset, 0);
+  const normalizedLimit = normalizePositiveInteger(limit, REVIEW_PAGE_SIZE);
+  const normalizedSort: PlaceReviewSort = sort === "rating" ? "rating" : "latest";
+  const user = await requireActiveUser();
+  const admin = createAdminClient();
+  let reviewsQuery = admin
+    .from("reviews")
+    .select(PLACE_REVIEW_SELECT_COLUMNS)
+    .eq("place_id", normalizedPlaceId);
+
+  reviewsQuery =
+    normalizedSort === "rating"
+      ? reviewsQuery
+          .order("rating", { ascending: false })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+      : reviewsQuery.order("created_at", { ascending: false }).order("id", { ascending: true });
+
+  const { data: reviews, error: reviewsError } = await reviewsQuery.range(
+    normalizedOffset,
+    normalizedOffset + normalizedLimit
+  );
+
+  if (reviewsError) {
+    throw new Error("Failed to load place reviews.");
+  }
+
+  const fetchedReviewRows = (reviews ?? []) as PlaceReviewRow[];
+  const hasMore = fetchedReviewRows.length > normalizedLimit;
+  const reviewRows = fetchedReviewRows.slice(0, normalizedLimit);
+
+  if (reviewRows.length === 0) {
+    return {
+      reviews: [],
+      hasMore: false,
+      nextOffset: normalizedOffset,
+    };
+  }
+
+  const placeReviews = await hydratePlaceReviews(admin, user.userId, reviewRows);
+
+  return {
+    reviews: placeReviews,
     hasMore,
     nextOffset: normalizedOffset + reviewRows.length,
   };
@@ -545,7 +644,7 @@ export async function getPlaceGoogleBusinessDetailsAction(
 ): Promise<PlaceGoogleBusinessDetails | null> {
   const normalizedPlaceId = placeId.trim();
 
-  if (!normalizedPlaceId) {
+  if (!isCanonicalUuid(normalizedPlaceId)) {
     return null;
   }
 

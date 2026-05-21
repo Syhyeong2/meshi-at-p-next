@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -16,8 +16,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meshi at P",
+  title: "Meshi At Play",
+  applicationName: "Meshi At Play",
   description: "社内向けの近場ごはんレビューサービス",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+  referrer: "no-referrer",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F18362",
+  colorScheme: "light",
 };
 
 export default function RootLayout({

@@ -2,7 +2,6 @@ import { MapMarkersSync } from "@/components/google-maps";
 import { getPlacesAction } from "@/features/places/actions";
 import type { PlaceSort } from "@/features/places/actions";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
-import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlacesPanelManager } from "./_panel/PlacesPanelManager";
 import {
   buildPanelHref,
@@ -110,7 +109,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   );
   const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
   const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
-  const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
     panelName === EXISTING_PLACE_REVIEW_PANEL && Boolean(selectedPlaceId);
@@ -162,9 +160,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         />
         <Footer href={newPlaceReviewHref} submitText="新しいお店のレビューを書く" />
       </div>
-      {isNewPlaceReviewPanel ? (
-        <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
-      ) : null}
+
       <PlacesPanelManager
         basePath="/home/places"
         panel={panelName}

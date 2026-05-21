@@ -1,6 +1,7 @@
 import {
   buildPanelHref,
   EXISTING_PLACE_REVIEW_PANEL,
+  NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
   PLACE_REVIEWS_PANEL,
   EDIT_PLACE_REVIEW_PANEL,
@@ -9,6 +10,7 @@ import { ExistingPlaceReviewPanel } from "./ExistingPlaceReviewPanel";
 import { PlaceDetailPanel } from "./PlaceDetailPanel";
 import { PlaceReviewsPanel } from "./PlaceReviewsPanel";
 import { EditPlaceReviewPanel } from "./EditPlaceReviewPanel";
+import { NewPlaceReviewPanel } from "./NewPlaceReviewPanel";
 
 type PlacesPanelManagerProps = {
   basePath: string;
@@ -27,13 +29,23 @@ export function PlacesPanelManager({
   page,
   baseParams = "",
 }: PlacesPanelManagerProps) {
-  const isPlaceDetailPanel = panel === PLACE_DETAIL_PANEL && Boolean(placeId);
-  const isExistingPlaceReviewPanel = panel === EXISTING_PLACE_REVIEW_PANEL && Boolean(placeId);
-  const isPlaceReviewsPanel = panel === PLACE_REVIEWS_PANEL && Boolean(placeId);
-  const isEditPlaceReviewPanel =
-    panel === EDIT_PLACE_REVIEW_PANEL && Boolean(placeId) && Boolean(reviewId);
+  // 共通の閉じる用リンク
+  const closePanelHref = buildPanelHref(baseParams, {
+    basePath,
+    page,
+  });
 
+  if (panel === NEW_PLACE_REVIEW_PANEL) {
+    return <NewPlaceReviewPanel closeHref={closePanelHref} page={page as number} />;
+  }
+
+  // placeIdが必須のパネル
   if (!placeId) return null;
+
+  const isPlaceDetailPanel = panel === PLACE_DETAIL_PANEL;
+  const isExistingPlaceReviewPanel = panel === EXISTING_PLACE_REVIEW_PANEL;
+  const isPlaceReviewsPanel = panel === PLACE_REVIEWS_PANEL;
+  const isEditPlaceReviewPanel = panel === EDIT_PLACE_REVIEW_PANEL && Boolean(reviewId);
 
   const buildDetailHref = (pid: string) =>
     buildPanelHref(baseParams, {
@@ -42,11 +54,6 @@ export function PlacesPanelManager({
       panel: PLACE_DETAIL_PANEL,
       placeId: pid,
     });
-
-  const closePanelHref = buildPanelHref(baseParams, {
-    basePath,
-    page,
-  });
 
   if (isPlaceDetailPanel) {
     return (

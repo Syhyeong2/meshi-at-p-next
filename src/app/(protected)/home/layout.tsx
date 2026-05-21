@@ -8,15 +8,13 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const { apiKey, mapId } = getPublicGoogleMapsEnv();
 
   return (
-    <div className="bg-background flex h-screen w-full overflow-hidden">
+    <div id="places_layout" className="bg-background flex h-screen w-full overflow-hidden">
       {/* --- 1. 縦のメニューバー (x0) --- */}
       <NavigationSidebar />
       {/* --- コンテンツエリアのコンテナ --- */}
       <div className="relative flex flex-1 overflow-hidden">
-        {/* --- 2. お店リストなどが表示される部分 (x80〜) --- */}
         <main className="relative z-10 flex h-full flex-1 flex-row overflow-hidden">
           <aside className="flex h-full w-120 flex-col border-r border-slate-200 bg-white">
-            {/* 検索・フィルター・リストの中身 */}
             {children}
           </aside>
 
@@ -37,11 +35,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           </section>
         </main>
 
-        {/* --- 3. マップの上にモーダル（オーバーレイ）をおける部分 --- */}
-        {/* pointer-events-none を指定して、下のマップ操作を邪魔しないようにします */}
+        {/* --- マップの上にモーダル（オーバーレイ）をおける部分 --- */}
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
           <div id="map-overlay-root" className="relative h-full w-full">
-            {/* ポータルや状態管理でここへコンテンツを差し込む想定 */}
+            {/* ポータルや状態管理でここへコンテンツを差し込む */}
           </div>
         </div>
       </div>

@@ -12,6 +12,9 @@ import type { PlaceReview } from "@/features/places/types";
 import { ReviewCard } from "@/features/review/components/ReviewCard";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
 import { toggleReviewLikeAction } from "@/features/review/actions";
+import { deleteReviewAction } from "@/features/review/actions";
+import { AlertModal } from "@/components/ui/AlertModal";
+import { createPortal } from "react-dom";
 
 type PlaceReviewsPanelClientProps = {
   detailHref: string;
@@ -57,6 +60,7 @@ export function PlaceReviewsPanelClient({
   const isReviewDetail = Boolean(selectedReview);
   const currentSortLabel =
     REVIEW_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "最新順";
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const toggleLike = async (reviewId: string, newState: boolean) => {
     await toggleReviewLikeAction(reviewId, newState);
@@ -130,8 +134,21 @@ export function PlaceReviewsPanelClient({
     }
   };
 
+  const handleTrashClick = () => {
+    setIsDeleteModalOpen(true);
+  };
+  const handleExecuteDelete = async () => {
+    if (!selectedReviewId) return;
+    const result = await deleteReviewAction(selectedReviewId);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    setReviewItems((currentItems) => currentItems.filter((item) => item.id !== selectedReviewId));
+    setSelectedReviewId(null);
+  };
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative z-40 flex h-full flex-col">
       <div className="flex flex-none flex-col gap-3 border-b border-slate-100 p-4">
         {isReviewDetail ? (
           <Button
@@ -180,7 +197,7 @@ export function PlaceReviewsPanelClient({
               </PopoverTrigger>
               <PopoverContent
                 align="end"
-                className="z-50 w-32 gap-1 border border-slate-200 bg-white p-1 shadow-xl"
+                className="z-30 w-32 gap-1 border border-slate-200 bg-white p-1 shadow-xl"
               >
                 {REVIEW_SORT_OPTIONS.map((option) => {
                   const isSelected = sort === option.value;
@@ -228,6 +245,7 @@ export function PlaceReviewsPanelClient({
             authorId={selectedReview.authorId}
             editHref={editHrefTemplate.replace("__REVIEW_ID__", selectedReview.id)}
             onLikeToggle={toggleLike}
+            onDelete={handleTrashClick}
           />
         </div>
       ) : (
@@ -266,6 +284,20 @@ export function PlaceReviewsPanelClient({
           )}
         </div>
       )}
+      {typeof window !== "undefined" && isDeleteModalOpen
+        ? createPortal(
+            <AlertModal
+              isOpen={isDeleteModalOpen}
+              onOpenChange={setIsDeleteModalOpen}
+              onConfirm={handleExecuteDelete}
+              description="このレビューを削除しますか？"
+              confirmText="削除する"
+              pendingText="削除中..."
+              errorMessage="レビューの削除に失敗しました。もう一度お試しください。"
+            />,
+            document.getElementById("places_layout")!
+          )
+        : null}
     </div>
   );
 }

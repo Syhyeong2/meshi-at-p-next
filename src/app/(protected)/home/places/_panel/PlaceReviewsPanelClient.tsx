@@ -23,6 +23,8 @@ type PlaceReviewsPanelClientProps = {
   reviews: PlaceReview[];
   reviewsHref: string;
   totalReviewCount: number;
+  currentUserId: string;
+  editHrefTemplate: string;
 };
 
 const REVIEW_SORT_OPTIONS: { label: string; value: PlaceReviewSort }[] = [
@@ -40,6 +42,8 @@ export function PlaceReviewsPanelClient({
   reviews,
   reviewsHref,
   totalReviewCount,
+  currentUserId,
+  editHrefTemplate,
 }: PlaceReviewsPanelClientProps) {
   const [sort, setSort] = useState<PlaceReviewSort>("latest");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
@@ -220,7 +224,9 @@ export function PlaceReviewsPanelClient({
             tags={selectedReview.tags}
             initialLikeCount={selectedReview.initialLikeCount}
             initialIsLiked={selectedReview.initialIsLiked}
+            currentUserId={currentUserId}
             authorId={selectedReview.authorId}
+            editHref={editHrefTemplate.replace("__REVIEW_ID__", selectedReview.id)}
             onLikeToggle={toggleLike}
           />
         </div>

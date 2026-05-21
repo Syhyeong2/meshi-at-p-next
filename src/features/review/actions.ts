@@ -354,3 +354,243 @@ export async function createReviewForExistingPlaceAction(
     };
   }
 }
+
+export type UpdateReviewInput = Omit<CreateReviewForExistingPlaceInput, "placeId"> & {
+  reviewId: string;
+};
+
+export type GetReviewForEditResult =
+  | {
+      success: true;
+      review: Omit<UpdateReviewInput, "reviewId" | "visitDate"> & {
+        id: string;
+        visitedAt: string | null;
+        placeId: string;
+      };
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export type UpdateReviewResult = CreateReviewResult;
+
+export type DeleteReviewResult =
+  | { success: true; placeId: string }
+  | { success: false; error: string };
+
+export async function updateReviewAction(input: UpdateReviewInput): Promise<UpdateReviewResult> {
+  const user = await requireActiveUser();
+  const reviewId = input.reviewId.trim();
+
+  if (!reviewId) {
+    return { success: false, error: "レビューが見つかりませんでした。" };
+  }
+
+  const validationError = validateReviewInput({
+    rating: input.rating,
+    priceRange: input.priceRange,
+  });
+  if (validationError) {
+    return { success: false, error: validationError };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: review, error: fetchError } = await supabase
+      .from("reviews")
+      .select("user_id, place_id")
+      .eq("id", reviewId)
+      .maybeSingle();
+
+    if (fetchError || !review) {
+      throw new ReviewSubmissionError("レビューが見つかりませんでした。");
+    }
+
+    if (review.user_id !== user.userId) {
+      throw new ReviewSubmissionError("自分が投稿したレビューのみ編集できます。");
+    }
+
+    const { error: updateError } = await supabase
+      .from("reviews")
+      .update({
+        rating: input.rating,
+        price_range: input.priceRange,
+        comment: input.comment.trim() || null,
+        visited_at: normalizeVisitDate(input.visitDate),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", reviewId);
+
+    if (updateError) {
+      throw new ReviewSubmissionError("レビューの更新に失敗しました。");
+    }
+
+    await supabase.from("review_tags").delete().eq("review_id", reviewId);
+
+    const uniqueTagIds = normalizeTagIds(input.tagIds);
+    if (uniqueTagIds.length > 0) {
+      const { error: reviewTagsError } = await supabase.from("review_tags").insert(
+        uniqueTagIds.map((tagId) => ({
+          review_id: reviewId,
+          tag_id: tagId,
+        }))
+      );
+
+      if (reviewTagsError) {
+        throw new ReviewSubmissionError("レビュータグの更新に失敗しました。");
+      }
+    }
+
+    const admin = createAdminClient();
+    const { data: reviews, error: reviewsError } = await admin
+      .from("reviews")
+      .select("rating")
+      .eq("place_id", review.place_id);
+
+    if (!reviewsError && reviews) {
+      const reviewCount = reviews.length;
+      const avgRating =
+        reviewCount === 0
+          ? 0
+          : Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2));
+
+      await admin
+        .from("places")
+        .update({ avg_rating: avgRating, review_count: reviewCount })
+        .eq("id", review.place_id);
+    }
+
+    revalidatePath("/home/places");
+
+    return {
+      success: true,
+      placeId: review.place_id,
+      reviewId: reviewId,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getCaughtReviewSubmissionMessage(error),
+    };
+  }
+}
+
+export async function deleteReviewAction(reviewId: string): Promise<DeleteReviewResult> {
+  const user = await requireActiveUser();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!normalizedReviewId) {
+    return { success: false, error: "レビューが見つかりませんでした。" };
+  }
+
+  try {
+    const supabase = await createClient();
+
+    const { data: review, error: fetchError } = await supabase
+      .from("reviews")
+      .select("user_id, place_id")
+      .eq("id", normalizedReviewId)
+      .maybeSingle();
+
+    if (fetchError || !review) {
+      throw new ReviewSubmissionError("レビューが見つかりませんでした。");
+    }
+
+    if (review.user_id !== user.userId) {
+      throw new ReviewSubmissionError("自分が投稿したレビューのみ削除できます。");
+    }
+
+    const { error: deleteError } = await supabase
+      .from("reviews")
+      .delete()
+      .eq("id", normalizedReviewId);
+
+    if (deleteError) {
+      throw new ReviewSubmissionError("レビューの削除に失敗しました。");
+    }
+
+    const admin = createAdminClient();
+    const { data: reviews, error: reviewsError } = await admin
+      .from("reviews")
+      .select("rating")
+      .eq("place_id", review.place_id);
+
+    if (!reviewsError && reviews) {
+      const reviewCount = reviews.length;
+      const avgRating =
+        reviewCount === 0
+          ? 0
+          : Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2));
+
+      await admin
+        .from("places")
+        .update({ avg_rating: avgRating, review_count: reviewCount })
+        .eq("id", review.place_id);
+    }
+
+    revalidatePath("/home/places");
+
+    return {
+      success: true,
+      placeId: review.place_id,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getCaughtReviewSubmissionMessage(error),
+    };
+  }
+}
+
+export async function getReviewForEditAction(reviewId: string): Promise<GetReviewForEditResult> {
+  const user = await requireActiveUser();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!normalizedReviewId) {
+    return { success: false, error: "レビューIDが正しくありません。" };
+  }
+
+  try {
+    const supabase = await createClient();
+
+    const [reviewResult, tagsResult] = await Promise.all([
+      supabase
+        .from("reviews")
+        .select("id, user_id, rating, price_range, comment, visited_at, place_id") // place_idも取る
+        .eq("id", normalizedReviewId)
+        .maybeSingle(),
+      supabase.from("review_tags").select("tag_id").eq("review_id", normalizedReviewId),
+    ]);
+
+    if (reviewResult.error || !reviewResult.data) {
+      throw new ReviewSubmissionError("レビューが見つかりませんでした。");
+    }
+
+    const reviewData = reviewResult.data;
+
+    if (reviewData.user_id !== user.userId) {
+      throw new ReviewSubmissionError("ご自身のレビュー以外は編集できません。");
+    }
+
+    const tagIds = tagsResult.data ? tagsResult.data.map((row) => row.tag_id) : [];
+
+    return {
+      success: true,
+      review: {
+        id: reviewData.id,
+        rating: reviewData.rating,
+        priceRange: reviewData.price_range,
+        comment: reviewData.comment || "",
+        visitedAt: reviewData.visited_at || null,
+        tagIds,
+        placeId: reviewData.place_id,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getCaughtReviewSubmissionMessage(error),
+    };
+  }
+}

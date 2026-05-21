@@ -5,6 +5,7 @@ import {
   createReviewForExistingPlaceAction,
   createReviewWithPlaceAction,
   findPlaceIdByGooglePlaceIdAction,
+  updateReviewAction,
   type ExistingReviewPlaceMatch,
 } from "@/features/review/actions";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
@@ -15,7 +16,7 @@ import type {
 } from "@/features/places/googlePlaces";
 import type { TagGroup } from "@/features/tag/types";
 
-export type ReviewFormMode = "new-place" | "existing-place";
+export type ReviewFormMode = "new-place" | "existing-place" | "edit";
 
 export interface ReviewFormPlaceInfo {
   id: string;
@@ -39,6 +40,11 @@ export interface ReviewFormPlaceInfo {
   walkingDurationSeconds?: number | null;
   isBookmarked?: boolean;
   bookmarkCount?: number;
+  reviewId?: string;
+  rating?: number;
+  comment?: string;
+  visitDate?: Date;
+  tagIds?: string[];
 }
 
 type SelectedPlaceInfo = SignedGooglePlaceDetails;
@@ -95,6 +101,7 @@ export function useReviewForm({
   const placeDetailsAbortRef = useRef<AbortController | null>(null);
   const isSubmittingRef = useRef(false);
   const isNewPlaceMode = mode === "new-place";
+  const isEdit = mode === "edit";
   const [selectedPlace, setSelectedPlace] = useState<
     ReviewFormPlaceInfo | SelectedPlaceInfo | undefined
   >(initialPlace);
@@ -105,13 +112,26 @@ export function useReviewForm({
   const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
   const [isLoadingPlaceDetails, setIsLoadingPlaceDetails] = useState(false);
   const [placeDetailsError, setPlaceDetailsError] = useState<string | null>(null);
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [visitDate, setVisitDate] = useState<Date | undefined>();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [validationAttemptCount, setValidationAttemptCount] = useState(0);
-  const [priceRange, setPriceRange] = useState<number | null>(null);
-  const { selectedTags, handleTagToggle } = useTagSelection();
+
+  const [rating, setRating] = useState(isEdit && initialPlace?.rating ? initialPlace.rating : 0);
+  const [comment, setComment] = useState(
+    isEdit && initialPlace?.comment ? initialPlace.comment : ""
+  );
+  const [visitDate, setVisitDate] = useState<Date | undefined>(
+    isEdit ? initialPlace?.visitDate : undefined
+  );
+  const [priceRange, setPriceRange] = useState<number | null>(
+    isEdit && initialPlace?.price_range ? initialPlace.price_range : null
+  );
+  const allFlattenTags = tagGroups.flatMap((group) => group.tags);
+  const initialSelectedTags =
+    isEdit && initialPlace?.tagIds
+      ? allFlattenTags.filter((tag) => initialPlace.tagIds!.includes(tag.id))
+      : [];
+  const { selectedTags, handleTagToggle } = useTagSelection(initialSelectedTags);
+
   const [isPending, setIsPending] = useState(false);
   const [existingPlaceMatch, setExistingPlaceMatch] = useState<ExistingReviewPlaceMatch | null>(
     null
@@ -318,7 +338,6 @@ export function useReviewForm({
       newErrors.place = "お店を選択してください。";
     }
     if (rating === 0) newErrors.rating = "レートを選択してください。";
-    // 価格帯の必須チェック
     if (priceRange === null) newErrors.priceRange = "価格帯を選択してください。";
 
     setErrors(newErrors);
@@ -358,33 +377,41 @@ export function useReviewForm({
         visitDate: formatDateInput(visitDate),
         tagIds: selectedTags.map((t) => t.id),
       };
-      const result =
-        mode === "existing-place"
-          ? await createReviewForExistingPlaceAction({
-              placeId: initialPlace?.id ?? "",
+
+      let result;
+      if (mode === "edit") {
+        result = await updateReviewAction({
+          reviewId: initialPlace?.reviewId ?? "",
+          ...reviewInput,
+        });
+      } else if (mode === "existing-place") {
+        result = await createReviewForExistingPlaceAction({
+          placeId: initialPlace?.id ?? "",
+          ...reviewInput,
+        });
+      } else {
+        result = hasSelectedPlaceDetails(selectedPlace)
+          ? await createReviewWithPlaceAction({
+              place: {
+                googlePlaceId: selectedPlace.googlePlaceId,
+                name: selectedPlace.name,
+                address: selectedPlace.address,
+                lat: selectedPlace.lat,
+                lng: selectedPlace.lng,
+                types: selectedPlace.types,
+                primaryType: selectedPlace.primaryType ?? null,
+                category: selectedPlace.category,
+                imageUrl: selectedPlace.imageUrl ?? null,
+                photoAttributions: selectedPlace.photoAttributions,
+                distanceFromOfficeMeters: selectedPlace.distanceFromOfficeMeters ?? null,
+                walkingDurationSeconds: selectedPlace.walkingDurationSeconds ?? null,
+                sessionToken: selectedPlace.sessionToken,
+                selectionSignature: selectedPlace.selectionSignature,
+              },
               ...reviewInput,
             })
-          : hasSelectedPlaceDetails(selectedPlace)
-            ? await createReviewWithPlaceAction({
-                place: {
-                  googlePlaceId: selectedPlace.googlePlaceId,
-                  name: selectedPlace.name,
-                  address: selectedPlace.address,
-                  lat: selectedPlace.lat,
-                  lng: selectedPlace.lng,
-                  types: selectedPlace.types,
-                  primaryType: selectedPlace.primaryType ?? null,
-                  category: selectedPlace.category,
-                  imageUrl: selectedPlace.imageUrl ?? null,
-                  photoAttributions: selectedPlace.photoAttributions,
-                  distanceFromOfficeMeters: selectedPlace.distanceFromOfficeMeters ?? null,
-                  walkingDurationSeconds: selectedPlace.walkingDurationSeconds ?? null,
-                  sessionToken: selectedPlace.sessionToken,
-                  selectionSignature: selectedPlace.selectionSignature,
-                },
-                ...reviewInput,
-              })
-            : null;
+          : null;
+      }
 
       if (!result) {
         setErrors((currentErrors) => ({

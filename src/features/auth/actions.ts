@@ -55,19 +55,6 @@ async function deleteCreatedUser(userId: string) {
   await admin.auth.admin.deleteUser(userId);
 }
 
-async function clearInviteCodeUse(code: string, userId: string) {
-  const admin = createAdminClient();
-
-  await admin
-    .from("invite_codes")
-    .update({
-      used_at: null,
-      used_by: null,
-    })
-    .eq("code", code)
-    .eq("used_by", userId);
-}
-
 export async function loginAction(
   _prevState: AuthActionState,
   formData: FormData
@@ -176,60 +163,47 @@ export async function signupWithInviteAction(
     return { error: "この招待コードは有効期限が切れています。" };
   }
 
-  const supabase = await createClient();
-  const { data: signupData, error: signupError } = await supabase.auth.signUp({
+  const { data: createdUserData, error: createUserError } = await admin.auth.admin.createUser({
     email,
     password,
-    options: {
-      data: {
-        nickname,
-      },
+    email_confirm: true,
+    user_metadata: {
+      nickname,
     },
   });
 
-  if (signupError || !signupData.user) {
+  if (createUserError || !createdUserData.user) {
     return { error: "アカウント作成に失敗しました。入力内容を確認してください。" };
   }
 
-  const userId = signupData.user.id;
-  const usedAt = new Date().toISOString();
-  const { data: usedInviteCode, error: useInviteCodeError } = await admin
-    .from("invite_codes")
-    .update({
-      used_at: usedAt,
-      used_by: userId,
-    })
-    .eq("code", inviteCode)
-    .is("used_at", null)
-    .gt("expires_at", usedAt)
-    .select("code")
-    .maybeSingle();
-
-  if (useInviteCodeError || !usedInviteCode) {
-    await supabase.auth.signOut();
-    await deleteCreatedUser(userId);
-
-    return { error: "招待コードを使用できませんでした。もう一度お試しください。" };
-  }
-
-  const { error: profileError } = await admin.from("profiles").insert({
-    id: userId,
-    nickname,
+  const userId = createdUserData.user.id;
+  const { error: profileError } = await admin.rpc("consume_invite_code_and_create_profile", {
+    p_code: inviteCode,
+    p_user_id: userId,
+    p_nickname: nickname,
   });
 
   if (profileError) {
-    await clearInviteCodeUse(inviteCode, userId);
-    await supabase.auth.signOut();
     await deleteCreatedUser(userId);
 
     if (profileError.code === "23505") {
       return { error: "このニックネームは既に使用されています" };
     }
 
+    if (profileError.code === "P0001") {
+      return { error: "招待コードを使用できませんでした。もう一度お試しください。" };
+    }
+
     return { error: "プロフィール作成に失敗しました。もう一度お試しください。" };
   }
 
-  if (signupData.session) {
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (!signInError) {
     revalidatePath("/", "layout");
     redirect("/home/places");
   }

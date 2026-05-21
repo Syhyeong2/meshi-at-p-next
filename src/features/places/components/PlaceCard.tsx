@@ -1,7 +1,7 @@
 import React from "react";
 import type { Place } from "@/features/places/types";
 import Image from "next/image";
-import { Bookmark, MapPin, SportShoe, Star } from "lucide-react";
+import { MapPin, SportShoe, Star } from "lucide-react";
 import { Tag } from "@/components/ui/Tag";
 import Link from "next/link";
 import { getPriceRangeLabel, getWalkingDurationMinutes } from "@/lib/utils";
@@ -14,13 +14,16 @@ type Props = {
   placeDetailHref: string;
 };
 
-export default function PlaceCard({ place, isSelected, onClick, placeDetailHref }: Props) {
+const PlaceCard = React.forwardRef<HTMLLIElement, Props>(function PlaceCard(
+  { place, isSelected, onClick, placeDetailHref },
+  ref
+) {
   const walkingDurationMinutes = getWalkingDurationMinutes(place.walkingDurationSeconds);
   const distanceLabel =
     place.distanceFromOfficeMeters === null ? "-" : `${place.distanceFromOfficeMeters}m`;
 
   return (
-    <li>
+    <li ref={ref} className="scroll-my-0.5">
       <Link
         href={placeDetailHref}
         scroll={false}
@@ -93,4 +96,6 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
       </Link>
     </li>
   );
-}
+});
+
+export default PlaceCard;

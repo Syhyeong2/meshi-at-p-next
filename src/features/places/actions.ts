@@ -51,6 +51,7 @@ type GetPlacesActionParams = {
   categories?: string[];
   tags?: string[];
   isGochimeshi?: boolean;
+  sort?: PlaceSort;
 };
 
 type GetPlaceReviewsActionParams = {
@@ -60,6 +61,7 @@ type GetPlaceReviewsActionParams = {
 };
 
 export type PlaceReviewSort = "latest" | "rating";
+export type PlaceSort = "rating" | "review_count" | "distance";
 
 type PlacesPagination = {
   page: number;
@@ -127,6 +129,10 @@ function normalizePositiveInteger(value: number | undefined, fallback: number): 
 
 function normalizeNonNegativeInteger(value: number | undefined, fallback: number): number {
   return Number.isInteger(value) && value !== undefined && value >= 0 ? value : fallback;
+}
+
+function normalizePlaceSort(value: PlaceSort | undefined): PlaceSort {
+  return value === "review_count" || value === "distance" ? value : "rating";
 }
 
 function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
@@ -236,9 +242,11 @@ export async function getPlacesAction({
   categories,
   tags,
   isGochimeshi,
+  sort,
 }: GetPlacesActionParams = {}): Promise<GetPlacesActionResult> {
   const normalizedPage = normalizePositiveInteger(page, DEFAULT_PAGE);
   const normalizedPageSize = normalizePositiveInteger(pageSize, DEFAULT_PAGE_SIZE);
+  const normalizedSort = normalizePlaceSort(sort);
   const from = (normalizedPage - 1) * normalizedPageSize;
   const to = from + normalizedPageSize - 1;
 
@@ -266,10 +274,21 @@ export async function getPlacesAction({
     query = query.in("reviews.review_tags.tag_id", tags);
   }
 
-  const { data, error, count } = await query
-    .order("avg_rating", { ascending: false })
-    .order("id", { ascending: true })
-    .range(from, to);
+  if (normalizedSort === "review_count") {
+    query = query
+      .order("review_count", { ascending: false })
+      .order("avg_rating", { ascending: false });
+  } else if (normalizedSort === "distance") {
+    query = query
+      .order("distance_from_office_meters", { ascending: true, nullsFirst: false })
+      .order("avg_rating", { ascending: false });
+  } else {
+    query = query
+      .order("avg_rating", { ascending: false })
+      .order("review_count", { ascending: false });
+  }
+
+  const { data, error, count } = await query.order("id", { ascending: true }).range(from, to);
 
   if (error) {
     console.error("【Supabaseデバッグ】エラーの全貌:", error);
@@ -289,6 +308,7 @@ export async function getPlacesAction({
       categories,
       tags,
       isGochimeshi,
+      sort: normalizedSort,
     });
   }
 

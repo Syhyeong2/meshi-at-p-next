@@ -1,5 +1,6 @@
 import { MapMarkersSync } from "@/components/google-maps";
 import { getPlacesAction } from "@/features/places/actions";
+import type { PlaceSort } from "@/features/places/actions";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlacesPanelManager } from "./_panel/PlacesPanelManager";
@@ -29,6 +30,7 @@ type ExplorePageProps = {
     tags?: SearchParamValue;
     gotimeshi?: SearchParamValue;
     keyword?: SearchParamValue;
+    sort?: SearchParamValue;
   }>;
 };
 
@@ -59,9 +61,26 @@ function parsePageParam(value: SearchParamValue): number {
   return Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 }
 
+function parsePlaceSortParam(value: SearchParamValue): PlaceSort {
+  const sort = getFirstParam(value);
+
+  return sort === "review_count" || sort === "distance" ? sort : "rating";
+}
+
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId, reviewId, keyword, rating, price, category, tags, gotimeshi } =
-    await searchParams;
+  const {
+    page,
+    panel,
+    placeId,
+    reviewId,
+    keyword,
+    rating,
+    price,
+    category,
+    tags,
+    gotimeshi,
+    sort,
+  } = await searchParams;
   const searchParamsObj = await searchParams;
   const baseParams = new URLSearchParams();
   for (const [key, value] of Object.entries(searchParamsObj)) {
@@ -71,6 +90,12 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     } else {
       baseParams.set(key, value);
     }
+  }
+  const placeSort = parsePlaceSortParam(sort);
+  if (placeSort === "rating") {
+    baseParams.delete("sort");
+  } else {
+    baseParams.set("sort", placeSort);
   }
   const requestedPage = parsePageParam(page);
   const panelName = getFirstParam(panel);
@@ -99,6 +124,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     categories: filterCategories,
     tags: filterTags,
     isGochimeshi: isGochimeshiSelected,
+    sort: placeSort,
   });
   const closePanelHref = buildPlacesHref(baseParams, { page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref(baseParams, {

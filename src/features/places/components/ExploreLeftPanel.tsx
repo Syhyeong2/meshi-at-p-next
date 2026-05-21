@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { SlidersHorizontal, Search, Star } from "lucide-react";
+import { Check, ChevronDown, RotateCcw, Search, SlidersHorizontal, Star } from "lucide-react";
 import { PlaceList } from "@/features/places/components/PlaceList";
 import { FilterList } from "./FilterList";
 import { Input } from "@/components/ui/Input";
@@ -10,7 +10,8 @@ import { TagButton } from "@/components/ui/TagButton";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useFilterNavigation } from "../hooks/useFilterNavigation";
 import { Paginator } from "@/components/ui/Paginator";
-import { RotateCcw } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import type { PlaceSort } from "@/features/places/actions";
 
 // 価格帯の表示ラベル用マスター
 const PRICE_LEVELS = [
@@ -37,6 +38,12 @@ const GOOGLE_PLACE_CATEGORIES = {
   OTHERS: "その他",
 };
 
+const PLACE_SORT_OPTIONS: { label: string; value: PlaceSort }[] = [
+  { label: "レビュー評価順", value: "rating" },
+  { label: "レビュー数順", value: "review_count" },
+  { label: "距離が近い順", value: "distance" },
+];
+
 interface ExploreLeftPanelProps {
   places: Place[];
   pagination: {
@@ -52,6 +59,7 @@ interface ExploreLeftPanelProps {
 
 export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: ExploreLeftPanelProps) {
   const [activeView, setActiveView] = useState<"list" | "filter">("list");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   const {
     keyword,
@@ -59,10 +67,13 @@ export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: Explo
     price,
     selectedCategories,
     isGochimeshi,
+    sort,
+    listQueryString,
     selectedTags,
     searchByKeyword,
     setRating,
     setPrice,
+    setSort,
     toggleCategorySelection,
     toggleGochimeshi,
     toggleTagSelection,
@@ -90,6 +101,17 @@ export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: Explo
   const handleClear = () => {
     setInputValue(""); // 入力欄を白紙に戻す
     searchByKeyword(""); // URLも完全に初期状態へリセット！
+  };
+
+  const currentSortLabel =
+    PLACE_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "レビュー評価順";
+
+  const changeSort = (nextSort: PlaceSort) => {
+    setSortMenuOpen(false);
+
+    if (nextSort !== sort) {
+      setSort(nextSort);
+    }
   };
 
   const activeBadges = [
@@ -245,14 +267,51 @@ export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: Explo
       ) : (
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <p className="p-4 pb-3 text-sm font-semibold text-slate-950">
-              お店一覧 ({pagination.totalCount}件)
-            </p>
+            <div className="flex items-center justify-between gap-3 p-4 pb-3">
+              <p className="min-w-0 text-sm font-semibold text-slate-950">
+                お店一覧 ({pagination.totalCount}件)
+              </p>
+              <Popover open={sortMenuOpen} onOpenChange={setSortMenuOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                  >
+                    {currentSortLabel}
+                    <ChevronDown className="size-3.5" aria-hidden="true" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="z-30 w-36 gap-1 border border-slate-200 bg-white p-1 shadow-xl"
+                >
+                  {PLACE_SORT_OPTIONS.map((option) => {
+                    const isSelected = sort === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`flex h-9 w-full items-center justify-between rounded-md px-2.5 text-left text-xs font-bold transition-colors ${
+                          isSelected
+                            ? "bg-slate-100 text-slate-950"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                        }`}
+                        onClick={() => changeSort(option.value)}
+                      >
+                        {option.label}
+                        {isSelected ? <Check className="size-3.5" aria-hidden="true" /> : null}
+                      </button>
+                    );
+                  })}
+                </PopoverContent>
+              </Popover>
+            </div>
             <div className="flex-1 overflow-y-auto px-4 pb-3">
               <PlaceList places={places} placeDetailHrefs={placeDetailHrefs} />
             </div>
           </div>
-          <Paginator pagination={pagination} baseUrl="/home/places" />
+          <Paginator pagination={pagination} baseUrl="/home/places" queryString={listQueryString} />
         </>
       )}
     </div>

@@ -115,7 +115,11 @@ export default async function Mypage({ searchParams }: MypageProps) {
           </div>
 
           {bookmarkedPlaces.length > 0 ? (
-            <PlaceList places={bookmarkedPlaces} placeDetailHrefs={placeDetailHrefs} />
+            <PlaceList
+              places={bookmarkedPlaces}
+              placeDetailHrefs={placeDetailHrefs}
+              activePlaceId={placeId}
+            />
           ) : (
             <div className="flex items-center justify-center py-10 text-sm text-slate-500">
               まだブックマークした店がありません

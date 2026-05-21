@@ -154,6 +154,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       <MapMarkersSync source="places" markers={placeMarkers} selectedMarkerId={selectedMarkerId} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ExploreLeftPanel
+          placeId={placeId as string}
           places={places}
           pagination={pagination}
           newPlaceReviewHref={newPlaceReviewHref}

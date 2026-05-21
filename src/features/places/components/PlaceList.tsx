@@ -7,11 +7,20 @@ import PlaceCard from "./PlaceCard";
 type PlaceListProps = {
   places: Place[];
   placeDetailHrefs: Record<string, string>;
+  activePlaceId?: string;
 };
 
-export function PlaceList({ places, placeDetailHrefs }: PlaceListProps) {
+export function PlaceList({ places, placeDetailHrefs, activePlaceId }: PlaceListProps) {
   const selectedPlaceId = useMapMarkerStore((state) => state.selectedMarkerId);
   const selectPlace = useMapMarkerStore((state) => state.selectMarker);
+
+  useEffect(() => {
+    if (activePlaceId) {
+      selectPlace(activePlaceId);
+    } else {
+      selectPlace(null);
+    }
+  }, [activePlaceId, selectPlace]);
 
   if (places.length === 0) {
     return (
@@ -24,7 +33,7 @@ export function PlaceList({ places, placeDetailHrefs }: PlaceListProps) {
   return (
     <ul className="flex flex-1 flex-col gap-3 overflow-y-auto text-sm">
       {places.map((place) => {
-        const isSelected = selectedPlaceId === place.id;
+        const isSelected = activePlaceId === place.id;
 
         return (
           <PlaceCard

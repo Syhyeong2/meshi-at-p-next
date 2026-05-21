@@ -1,11 +1,6 @@
 import { getBookmarkedPlacesAction } from "@/features/places/actions";
 import { PlaceList } from "@/features/places/components/PlaceList";
-import {
-  buildPanelHref,
-  PLACE_DETAIL_PANEL,
-  EXISTING_PLACE_REVIEW_PANEL,
-  PLACE_REVIEWS_PANEL,
-} from "../places/_panel/panelLinks";
+import { buildPanelHref, PLACE_DETAIL_PANEL } from "../places/_panel/panelLinks";
 import { MapMarkersSync } from "@/components/google-maps";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { PlacesPanelManager } from "../places/_panel/PlacesPanelManager";
@@ -49,7 +44,11 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           {bookmarkedPlaces.length > 0 ? (
-            <PlaceList places={bookmarkedPlaces} placeDetailHrefs={placeDetailHrefs} />
+            <PlaceList
+              places={bookmarkedPlaces}
+              placeDetailHrefs={placeDetailHrefs}
+              activePlaceId={placeId}
+            />
           ) : (
             <div className="flex h-full items-center justify-center py-20 text-sm text-slate-500">
               まだブックマークした店がありません

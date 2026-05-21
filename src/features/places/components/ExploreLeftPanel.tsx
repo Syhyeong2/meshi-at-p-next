@@ -45,6 +45,7 @@ const PLACE_SORT_OPTIONS: { label: string; value: PlaceSort }[] = [
 ];
 
 interface ExploreLeftPanelProps {
+  placeId: string;
   places: Place[];
   pagination: {
     page: number;
@@ -57,7 +58,12 @@ interface ExploreLeftPanelProps {
   placeDetailHrefs: Record<string, string>;
 }
 
-export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: ExploreLeftPanelProps) {
+export function ExploreLeftPanel({
+  placeId,
+  places,
+  pagination,
+  placeDetailHrefs,
+}: ExploreLeftPanelProps) {
   const [activeView, setActiveView] = useState<"list" | "filter">("list");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
@@ -308,7 +314,11 @@ export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: Explo
               </Popover>
             </div>
             <div className="flex-1 overflow-y-auto px-4 pb-3">
-              <PlaceList places={places} placeDetailHrefs={placeDetailHrefs} />
+              <PlaceList
+                places={places}
+                placeDetailHrefs={placeDetailHrefs}
+                activePlaceId={placeId}
+              />
             </div>
           </div>
           <Paginator pagination={pagination} baseUrl="/home/places" queryString={listQueryString} />

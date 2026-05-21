@@ -470,7 +470,7 @@ async function PlaceDetailBody({
             />
           </Suspense>
         </div>
-        <Footer href={reviewHref} submitText="レビューを書く" />
+        <Footer href={reviewHref} submitText="このお店のレビューを書く" />
       </div>
     </>
   );

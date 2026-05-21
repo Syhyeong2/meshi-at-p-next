@@ -11,7 +11,7 @@ const tagVariants = cva(
       variant: {
         primary: "bg-primary-background text-primary",
         secondary: "bg-secondary-background text-secondary",
-        tertiary: "bbg-tertiary-background text-tertiary",
+        tertiary: "bg-tertiary-background text-tertiary",
         neutral: "bg-neutral-background text-neutral",
       },
     },

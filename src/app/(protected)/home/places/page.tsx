@@ -54,10 +54,24 @@ function getFirstParam(value: SearchParamValue): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function parsePageParam(value: SearchParamValue): number {
-  const parsedPage = Number(getFirstParam(value));
+function parsePositiveIntegerParam(value: SearchParamValue, fallback: number): number {
+  const parsedValue = Number(getFirstParam(value));
 
-  return Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  return Number.isFinite(parsedValue) && Number.isInteger(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : fallback;
+}
+
+function parseOptionalPositiveIntegerParam(value: SearchParamValue): number | null {
+  const parsedValue = Number(getFirstParam(value));
+
+  return Number.isFinite(parsedValue) && Number.isInteger(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : null;
+}
+
+function parsePageParam(value: SearchParamValue): number {
+  return parsePositiveIntegerParam(value, 1);
 }
 
 function parsePlaceSortParam(value: SearchParamValue): PlaceSort {
@@ -101,8 +115,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const selectedPlaceId = getFirstParam(placeId);
   const selectedReviewId = getFirstParam(reviewId);
   const selectedkeyward = keyword ? String(getFirstParam(keyword)) : undefined;
-  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
-  const filterPrice = price ? Number(getFirstParam(price)) : null;
+  const filterRating = parsePositiveIntegerParam(rating, 0);
+  const filterPrice = parseOptionalPositiveIntegerParam(price);
   const categories = Array.isArray(category) ? category : category ? [category] : [];
   const filterCategories = categories.map(
     (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key

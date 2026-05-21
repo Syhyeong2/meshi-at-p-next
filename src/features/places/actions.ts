@@ -179,6 +179,16 @@ function normalizePlaceSort(value: PlaceSort | undefined): PlaceSort {
   return value === "review_count" || value === "distance" ? value : "rating";
 }
 
+function isPositiveFiniteInteger(value: number | null | undefined): value is number {
+  return (
+    value !== null &&
+    value !== undefined &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value > 0
+  );
+}
+
 function getPlacesSelectColumns(tags?: string[]): string {
   return tags && tags.length > 0
     ? `${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`
@@ -196,10 +206,10 @@ function buildPlacesQuery(
     query = query.ilike("name", `%${keyword.trim()}%`);
   }
 
-  if (rating && rating > 0) {
+  if (isPositiveFiniteInteger(rating)) {
     query = query.gte("avg_rating", rating);
   }
-  if (price !== undefined && price !== null) {
+  if (isPositiveFiniteInteger(price)) {
     query = query.eq("price_range", price);
   }
   if (categories && categories.length > 0) {

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meshi at P",
+  title: "Meshi At Play",
   description: "社内向けの近場ごはんレビューサービス",
 };
 

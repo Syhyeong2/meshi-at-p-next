@@ -1,8 +1,5 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
 
 type MyReviewPanelClientProps = {
@@ -10,6 +7,7 @@ type MyReviewPanelClientProps = {
     id: string;
     authorName: string;
     rating: number;
+    place: string;
     priceRange: number | null;
     date: Date;
     visitDate: string | null;
@@ -21,7 +19,6 @@ type MyReviewPanelClientProps = {
   };
   currentUserId: string;
   editHref: string;
-  closeHref: string;
   onLikeToggle: (reviewId: string, shouldLike: boolean) => Promise<void>;
 };
 
@@ -29,28 +26,16 @@ export function MyPlaceReviewPanelClient({
   review,
   currentUserId,
   editHref,
-  closeHref,
   onLikeToggle,
 }: MyReviewPanelClientProps) {
+  console.log(review);
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-none flex-col gap-3 border-b border-slate-100 px-4 py-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="w-fit justify-start gap-2 px-0 text-xs"
-        >
-          <Link href={closeHref} scroll={false}>
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            戻る
-          </Link>
-        </Button>
-      </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <ReviewDetail
           id={review.id}
-          mode="shop-detail"
+          mode="my-review"
+          place={review.place}
           name={review.authorName}
           rating={review.rating}
           priceRange={review.priceRange}

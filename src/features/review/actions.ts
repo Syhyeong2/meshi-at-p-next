@@ -636,6 +636,7 @@ export type GetReviewResult = {
   id: string;
   authorName: string;
   authorId: string;
+  place: string;
   placeId: string;
   rating: number;
   priceRange: number | null;
@@ -670,6 +671,9 @@ export async function getReviewAction(reviewId: string): Promise<GetReviewResult
         place_id,
         profiles!reviews_user_id_fkey (
           nickname
+        ),
+        places (
+          name
         ),
         review_tags (
           tags (
@@ -707,6 +711,7 @@ export async function getReviewAction(reviewId: string): Promise<GetReviewResult
       authorId: review.user_id,
       authorName: (review.profiles as { nickname: string } | null)?.nickname ?? "不明なユーザー",
       placeId: review.place_id,
+      place: (review.places as { name: string } | null)?.name ?? "不明なお店",
       rating: review.rating,
       priceRange: review.price_range,
       comment: review.comment?.trim() || "",

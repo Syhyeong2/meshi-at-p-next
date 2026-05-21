@@ -55,7 +55,6 @@ export async function MyPlaceReviewPanel({
         }}
         currentUserId={user.userId}
         editHref={editHref}
-        closeHref={closeHref}
         onLikeToggle={handleLikeToggle}
       />
     </HomePanelFrame>

@@ -58,18 +58,22 @@ export const MyReviewCard = ({
           <StarRating rating={rating} />
         </div>
       </div>
-      <div className="flex gap-2">
-        {tags.map((tag) => (
-          <Tag key={tag} variant="primary">
-            {tag}
-          </Tag>
-        ))}
-      </div>
+      {tags && tags.length > 0 && (
+        <div className="flex gap-2">
+          {tags.map((tag) => (
+            <Tag key={tag} variant="primary">
+              {tag}
+            </Tag>
+          ))}
+        </div>
+      )}
 
       {/* 3行制限のコメント */}
-      <p className="wrap-break-words line-clamp-1 text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
-        {comment}
-      </p>
+      {comment && comment.trim() !== "" && (
+        <p className="wrap-break-words line-clamp-1 text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+          {comment}
+        </p>
+      )}
 
       {/* 日付 */}
       <span className="text-muted-foreground text-xs font-medium text-slate-500">

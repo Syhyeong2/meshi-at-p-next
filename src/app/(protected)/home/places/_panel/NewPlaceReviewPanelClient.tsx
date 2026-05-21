@@ -6,7 +6,7 @@ import { ReviewForm } from "@/features/review/components/ReviewForm";
 import type { ExistingReviewPlaceMatch } from "@/features/review/actions";
 import type { TagGroup } from "@/features/tag/types";
 
-import { buildPlacesHref, EXISTING_PLACE_REVIEW_PANEL, PLACE_DETAIL_PANEL } from "./panelLinks";
+import { buildPanelHref, EXISTING_PLACE_REVIEW_PANEL, PLACE_DETAIL_PANEL } from "./panelLinks";
 
 type NewPlaceReviewPanelClientProps = {
   tagGroups: TagGroup[];
@@ -24,7 +24,7 @@ export function NewPlaceReviewPanelClient({
 
   const navigateToPlaceDetail = (placeId: string) => {
     router.replace(
-      buildPlacesHref(searchParams, {
+      buildPanelHref(searchParams, {
         page,
         panel: PLACE_DETAIL_PANEL,
         placeId,
@@ -34,7 +34,7 @@ export function NewPlaceReviewPanelClient({
   };
   const navigateToExistingPlaceReview = (place: ExistingReviewPlaceMatch) => {
     router.replace(
-      buildPlacesHref(searchParams, {
+      buildPanelHref(searchParams, {
         page,
         panel: EXISTING_PLACE_REVIEW_PANEL,
         placeId: place.id,

@@ -5,7 +5,7 @@ import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlacesPanelManager } from "./_panel/PlacesPanelManager";
 import {
-  buildPlacesHref,
+  buildPanelHref,
   EXISTING_PLACE_REVIEW_PANEL,
   NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
@@ -126,13 +126,13 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     isGochimeshi: isGochimeshiSelected,
     sort: placeSort,
   });
-  const closePanelHref = buildPlacesHref(baseParams, { page: pagination.page });
-  const newPlaceReviewHref = buildPlacesHref(baseParams, {
+  const closePanelHref = buildPanelHref(baseParams, { page: pagination.page });
+  const newPlaceReviewHref = buildPanelHref(baseParams, {
     page: pagination.page,
     panel: NEW_PLACE_REVIEW_PANEL,
   });
   const buildPlaceDetailHref = (placeId: string) =>
-    buildPlacesHref(baseParams, {
+    buildPanelHref(baseParams, {
       page: pagination.page,
       panel: PLACE_DETAIL_PANEL,
       placeId,

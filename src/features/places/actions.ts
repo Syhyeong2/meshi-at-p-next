@@ -41,6 +41,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const POPULAR_REVIEW_TAGS_LIMIT = 4;
 const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
 const REVIEW_PAGE_SIZE = 10;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PLACE_REVIEW_SELECT_COLUMNS = `
   id,
   user_id,
@@ -189,8 +190,14 @@ function isPositiveFiniteInteger(value: number | null | undefined): value is num
   );
 }
 
+function isCanonicalUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
 function getPlacesSelectColumns(tags?: string[]): string {
-  return tags && tags.length > 0
+  const validTags = tags?.filter(isCanonicalUuid) ?? [];
+
+  return validTags.length > 0
     ? `${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`
     : PLACES_SELECT_COLUMNS;
 }
@@ -200,6 +207,7 @@ function buildPlacesQuery(
   { keyword, rating, price, categories, tags, isGochimeshi }: PlacesQueryFilters,
   selectOptions?: PlacesSelectOptions
 ) {
+  const validTags = tags?.filter(isCanonicalUuid) ?? [];
   let query = supabase.from("places").select(getPlacesSelectColumns(tags), selectOptions);
 
   if (keyword && keyword.trim() !== "") {
@@ -218,8 +226,8 @@ function buildPlacesQuery(
   if (isGochimeshi === true) {
     query = query.eq("is_gochimeshi", true);
   }
-  if (tags && tags.length > 0) {
-    query = query.in("reviews.review_tags.tag_id", tags);
+  if (validTags.length > 0) {
+    query = query.in("reviews.review_tags.tag_id", validTags);
   }
 
   return query;

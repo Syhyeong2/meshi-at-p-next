@@ -14,6 +14,7 @@ import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel"
 import { Footer } from "@/components/ui/Footer";
 
 const PLACES_PAGE_SIZE = 20;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type SearchParamValue = string | string[] | undefined;
 
@@ -80,6 +81,10 @@ function parsePlaceSortParam(value: SearchParamValue): PlaceSort {
   return sort === "review_count" || sort === "distance" ? sort : "rating";
 }
 
+function isCanonicalUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const {
     page,
@@ -121,7 +126,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const filterCategories = categories.map(
     (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
   );
-  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const filterTags = (Array.isArray(tags) ? tags : tags ? [tags] : []).filter(isCanonicalUuid);
   const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =

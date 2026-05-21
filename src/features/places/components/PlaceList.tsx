@@ -3,6 +3,7 @@
 import { useMapMarkerStore } from "@/stores";
 import type { Place } from "@/features/places/types";
 import PlaceCard from "./PlaceCard";
+import { useEffect } from "react";
 
 type PlaceListProps = {
   places: Place[];

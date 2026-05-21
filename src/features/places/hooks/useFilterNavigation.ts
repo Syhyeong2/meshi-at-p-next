@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Tag, TagGroup } from "@/features/tag/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getTagGroupsAction } from "@/features/tag/actions";
+import type { PlaceSort } from "@/features/places/actions";
 
 const GOOGLE_PLACE_CATEGORIES = {
   CAFE: "カフェ",
@@ -21,6 +22,10 @@ const GOOGLE_PLACE_CATEGORIES = {
 };
 type GooglePlaceCategoryKey = keyof typeof GOOGLE_PLACE_CATEGORIES;
 
+function normalizePlaceSort(value: string | null): PlaceSort {
+  return value === "review_count" || value === "distance" ? value : "rating";
+}
+
 export const useFilterNavigation = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,8 +37,25 @@ export const useFilterNavigation = () => {
   const isGochimeshi = searchParams.get("gotimeshi") === "true";
   const selectedTagIds = searchParams.getAll("tags");
   const selectedCategories = searchParams.getAll("category") as GooglePlaceCategoryKey[];
+  const sort = normalizePlaceSort(searchParams.get("sort"));
   const [tagGroups, setTagGroups] = useState<TagGroup[]>([]);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
+
+  const listQueryString = (() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.delete("panel");
+    params.delete("placeId");
+    params.delete("reviewId");
+
+    if (sort === "rating") {
+      params.delete("sort");
+    } else {
+      params.set("sort", sort);
+    }
+
+    return params.toString();
+  })();
 
   // URLを更新する共通のヘルパー
   const updateURL = (params: URLSearchParams) => {
@@ -93,6 +115,20 @@ export const useFilterNavigation = () => {
     updateURL(params);
   };
 
+  const setSort = (newSort: PlaceSort) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.set("page", "1");
+
+    if (newSort === "rating") {
+      params.delete("sort");
+    } else {
+      params.set("sort", newSort);
+    }
+
+    updateURL(params);
+  };
+
   // タグの追加と削除
   const toggleTagSelection = (tag: Tag) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -130,6 +166,8 @@ export const useFilterNavigation = () => {
     rating,
     price,
     isGochimeshi,
+    sort,
+    listQueryString,
     selectedCategories,
     tagGroups,
     selectedTags,
@@ -137,6 +175,7 @@ export const useFilterNavigation = () => {
     searchByKeyword,
     setRating,
     setPrice,
+    setSort,
     toggleCategorySelection,
     toggleGochimeshi,
     toggleTagSelection,

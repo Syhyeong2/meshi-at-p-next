@@ -104,6 +104,7 @@ type PaginationProps = {
     hasNextPage: boolean;
   };
   baseUrl: string;
+  queryString?: string;
 };
 
 const MAX_VISIBLE_PAGES = 5;
@@ -116,7 +117,19 @@ function getVisiblePages(currentPage: number, totalPages: number): number[] {
   return Array.from({ length: visibleCount }, (_, index) => start + index);
 }
 
-export function Paginator({ pagination, baseUrl }: PaginationProps) {
+function buildPageHref(baseUrl: string, queryString: string | undefined, page: number): string {
+  const params = new URLSearchParams(queryString);
+
+  params.set("page", String(page));
+  params.delete("panel");
+  params.delete("placeId");
+  params.delete("reviewId");
+
+  const nextQueryString = params.toString();
+  return nextQueryString ? `${baseUrl}?${nextQueryString}` : baseUrl;
+}
+
+export function Paginator({ pagination, baseUrl, queryString }: PaginationProps) {
   const { page: currentPage, totalPages, hasPreviousPage, hasNextPage } = pagination;
   const visiblePages = getVisiblePages(currentPage, totalPages);
 
@@ -125,14 +138,14 @@ export function Paginator({ pagination, baseUrl }: PaginationProps) {
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
-            href={hasPreviousPage ? `${baseUrl}?page=${currentPage - 1}` : "#"}
+            href={hasPreviousPage ? buildPageHref(baseUrl, queryString, currentPage - 1) : "#"}
             className={!hasPreviousPage ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
         {visiblePages.map((p) => (
           <PaginationItem key={p}>
             <PaginationLink
-              href={`${baseUrl}?page=${p}`}
+              href={buildPageHref(baseUrl, queryString, p)}
               isActive={p === currentPage}
               className="h-5 w-5 rounded-md"
             >
@@ -142,7 +155,7 @@ export function Paginator({ pagination, baseUrl }: PaginationProps) {
         ))}
         <PaginationItem>
           <PaginationNext
-            href={hasNextPage ? `${baseUrl}?page=${currentPage + 1}` : "#"}
+            href={hasNextPage ? buildPageHref(baseUrl, queryString, currentPage + 1) : "#"}
             className={!hasNextPage ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>

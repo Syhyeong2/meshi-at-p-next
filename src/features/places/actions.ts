@@ -68,6 +68,16 @@ type GetPlacesActionParams = {
   sort?: PlaceSort;
 };
 
+type PlacesQueryFilters = Pick<
+  GetPlacesActionParams,
+  "keyword" | "rating" | "price" | "categories" | "tags" | "isGochimeshi"
+>;
+
+type PlacesSelectOptions = {
+  count?: "exact";
+  head?: boolean;
+};
+
 type GetPlaceReviewsActionParams = {
   offset?: number;
   limit?: number;
@@ -137,6 +147,26 @@ type ReviewLikeRow = {
   user_id: string;
 };
 
+type PlaceRow = {
+  id: string;
+  google_place_id: string;
+  name: string;
+  category: string | null;
+  price_range: number | null;
+  lat: number;
+  lng: number;
+  image_url: string | null;
+  photo_attributions: Json;
+  is_gochimeshi: boolean;
+  avg_rating: number;
+  review_count: number;
+  distance_from_office_meters: number | null;
+  walking_duration_seconds: number | null;
+  place_bookmarks?: { user_id: string }[] | { user_id: string } | null;
+};
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
   return Number.isInteger(value) && value && value > 0 ? value : fallback;
 }
@@ -147,6 +177,42 @@ function normalizeNonNegativeInteger(value: number | undefined, fallback: number
 
 function normalizePlaceSort(value: PlaceSort | undefined): PlaceSort {
   return value === "review_count" || value === "distance" ? value : "rating";
+}
+
+function getPlacesSelectColumns(tags?: string[]): string {
+  return tags && tags.length > 0
+    ? `${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`
+    : PLACES_SELECT_COLUMNS;
+}
+
+function buildPlacesQuery(
+  supabase: SupabaseServerClient,
+  { keyword, rating, price, categories, tags, isGochimeshi }: PlacesQueryFilters,
+  selectOptions?: PlacesSelectOptions
+) {
+  let query = supabase.from("places").select(getPlacesSelectColumns(tags), selectOptions);
+
+  if (keyword && keyword.trim() !== "") {
+    query = query.ilike("name", `%${keyword.trim()}%`);
+  }
+
+  if (rating && rating > 0) {
+    query = query.gte("avg_rating", rating);
+  }
+  if (price !== undefined && price !== null) {
+    query = query.eq("price_range", price);
+  }
+  if (categories && categories.length > 0) {
+    query = query.in("category", categories);
+  }
+  if (isGochimeshi === true) {
+    query = query.eq("is_gochimeshi", true);
+  }
+  if (tags && tags.length > 0) {
+    query = query.in("reviews.review_tags.tag_id", tags);
+  }
+
+  return query;
 }
 
 function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
@@ -174,26 +240,7 @@ function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
     .filter((attribution): attribution is GooglePlacePhotoAttribution => attribution !== null);
 }
 
-function toPlace(
-  place: {
-    id: string;
-    google_place_id: string;
-    name: string;
-    category: string | null;
-    price_range: number | null;
-    lat: number;
-    lng: number;
-    image_url: string | null;
-    photo_attributions: Json;
-    is_gochimeshi: boolean;
-    avg_rating: number;
-    review_count: number;
-    distance_from_office_meters: number | null;
-    walking_duration_seconds: number | null;
-    place_bookmarks?: { user_id: string }[] | { user_id: string } | null;
-  },
-  currentUserId?: string
-): Place {
+function toPlace(place: PlaceRow, currentUserId?: string): Place {
   const bookmarks = Array.isArray(place.place_bookmarks)
     ? place.place_bookmarks
     : place.place_bookmarks
@@ -335,32 +382,33 @@ export async function getPlacesAction({
   const normalizedPage = normalizePositiveInteger(page, DEFAULT_PAGE);
   const normalizedPageSize = normalizePositiveInteger(pageSize, DEFAULT_PAGE_SIZE);
   const normalizedSort = normalizePlaceSort(sort);
-  const from = (normalizedPage - 1) * normalizedPageSize;
+  const supabase = await createClient();
+  const filters = {
+    keyword,
+    rating,
+    price,
+    categories,
+    tags,
+    isGochimeshi,
+  };
+
+  const { error: countError, count } = await buildPlacesQuery(supabase, filters, {
+    count: "exact",
+    head: true,
+  });
+
+  if (countError) {
+    console.error("【Supabaseデバッグ】エラーの全貌:", countError);
+    throw new Error("Failed to load places.");
+  }
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / normalizedPageSize));
+  const safePage = Math.min(normalizedPage, totalPages);
+  const from = (safePage - 1) * normalizedPageSize;
   const to = from + normalizedPageSize - 1;
 
-  const supabase = await createClient();
-  let query = supabase.from("places").select(PLACES_SELECT_COLUMNS, { count: "exact" });
-
-  if (keyword && keyword.trim() !== "") {
-    query = query.ilike("name", `%${keyword.trim()}%`);
-  }
-
-  if (rating && rating > 0) {
-    query = query.gte("avg_rating", rating);
-  }
-  if (price !== undefined && price !== null) {
-    query = query.eq("price_range", price);
-  }
-  if (categories && categories.length > 0) {
-    query = query.in("category", categories);
-  }
-  if (isGochimeshi === true) {
-    query = query.eq("is_gochimeshi", true);
-  }
-  if (tags && tags.length > 0) {
-    query = query.select(`${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`);
-    query = query.in("reviews.review_tags.tag_id", tags);
-  }
+  let query = buildPlacesQuery(supabase, filters);
 
   if (normalizedSort === "review_count") {
     query = query
@@ -376,40 +424,25 @@ export async function getPlacesAction({
       .order("review_count", { ascending: false });
   }
 
-  const { data, error, count } = await query.order("id", { ascending: true }).range(from, to);
+  const { data, error } = await query.order("id", { ascending: true }).range(from, to);
 
   if (error) {
     console.error("【Supabaseデバッグ】エラーの全貌:", error);
     throw new Error("Failed to load places.");
   }
 
-  const totalCount = count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / normalizedPageSize));
-
-  if (normalizedPage > totalPages) {
-    return getPlacesAction({
-      page: totalPages,
-      pageSize: normalizedPageSize,
-      keyword,
-      rating,
-      price,
-      categories,
-      tags,
-      isGochimeshi,
-      sort: normalizedSort,
-    });
-  }
-
   const { userId } = await requireActiveUser();
+  const placeRows = (data ?? []) as unknown as PlaceRow[];
+
   return {
-    places: data.map((p) => toPlace(p, userId)),
+    places: placeRows.map((p) => toPlace(p, userId)),
     pagination: {
-      page: normalizedPage,
+      page: safePage,
       pageSize: normalizedPageSize,
       totalCount,
       totalPages,
-      hasPreviousPage: normalizedPage > 1,
-      hasNextPage: normalizedPage < totalPages,
+      hasPreviousPage: safePage > 1,
+      hasNextPage: safePage < totalPages,
     },
   };
 }

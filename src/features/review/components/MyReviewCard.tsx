@@ -70,9 +70,7 @@ export const MyReviewCard = ({
 
       {/* 3行制限のコメント */}
       {comment && comment.trim() !== "" && (
-        <p className="wrap-break-words line-clamp-1 text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
-          {comment}
-        </p>
+        <p className="line-clamp-1 text-xs leading-relaxed break-all text-slate-700">{comment}</p>
       )}
 
       {/* 日付 */}

@@ -78,7 +78,7 @@ export function LoginForm({ signupSuccess }: LoginFormProps) {
         </Button>
 
         <div className="mt-4 text-center text-sm text-slate-600">
-          すでにアカウントを持っている場合はこちら{" "}
+          まだアカウントをお持ちでないですか？{" "}
           <Link
             href="/signup"
             className="text-primary font-semibold underline-offset-4 hover:underline"

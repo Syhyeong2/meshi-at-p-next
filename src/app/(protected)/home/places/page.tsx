@@ -133,7 +133,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           newPlaceReviewHref={newPlaceReviewHref}
           placeDetailHrefs={placeDetailHrefs} // 一覧のリンク用
         />
-        <Footer href={newPlaceReviewHref} submitText="店のレビューを投稿する" />
+        <Footer href={newPlaceReviewHref} submitText="新しいお店のレビューを書く" />
       </div>
       {isNewPlaceReviewPanel ? (
         <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />

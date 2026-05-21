@@ -86,7 +86,7 @@ export function SignupForm({ initialInviteCode = "" }: SignupFormProps) {
               value={formData.nickname}
               aria-invalid={!!getErrorMessage("nickname")}
               leftIcon={User}
-              placeholder="ニックネームを入力 (2~20文字)"
+              placeholder="ニックネームを入力 (2~12文字)"
               required
               onChange={handleInputChange}
             />

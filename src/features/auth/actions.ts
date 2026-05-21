@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { createHash } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -30,6 +30,10 @@ export type AuthActionState = {
     nickname?: string;
     inviteCode?: string;
   };
+};
+
+type LogoutActionState = {
+  error?: string;
 };
 
 function readFormValue(formData: FormData, name: string): string | undefined {
@@ -95,11 +99,16 @@ export async function loginAction(
   redirect("/home/places");
 }
 
-export async function logoutAction(): Promise<void> {
+export async function logoutAction(): Promise<LogoutActionState> {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    return { error: "ログアウトに失敗しました。もう一度お試しください。" };
+  }
 
   revalidatePath("/", "layout");
+  redirect("/login", RedirectType.replace);
 }
 
 export async function signupWithInviteAction(

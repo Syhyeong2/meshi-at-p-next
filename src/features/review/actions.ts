@@ -12,6 +12,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 
+type SupabaseAdminClient = ReturnType<typeof createAdminClient>;
+
 export type SelectedReviewPlaceInput = SignedGooglePlaceDetails;
 
 export type CreateReviewWithPlaceInput = {
@@ -180,6 +182,20 @@ class ReviewSubmissionError extends Error {
   constructor(message = REVIEW_SUBMISSION_ERROR) {
     super(message);
     this.name = "ReviewSubmissionError";
+  }
+}
+
+async function refreshPlaceReviewSummary(
+  admin: SupabaseAdminClient,
+  placeId: string,
+  errorMessage: string
+): Promise<void> {
+  const { error } = await admin.rpc("refresh_place_review_summary", {
+    p_place_id: placeId,
+  });
+
+  if (error) {
+    throw new ReviewSubmissionError(errorMessage);
   }
 }
 
@@ -480,23 +496,7 @@ export async function updateReviewAction(input: UpdateReviewInput): Promise<Upda
     }
 
     const admin = createAdminClient();
-    const { data: reviews, error: reviewsError } = await admin
-      .from("reviews")
-      .select("rating")
-      .eq("place_id", review.place_id);
-
-    if (!reviewsError && reviews) {
-      const reviewCount = reviews.length;
-      const avgRating =
-        reviewCount === 0
-          ? 0
-          : Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2));
-
-      await admin
-        .from("places")
-        .update({ avg_rating: avgRating, review_count: reviewCount })
-        .eq("id", review.place_id);
-    }
+    await refreshPlaceReviewSummary(admin, review.place_id, "レビューの更新に失敗しました。");
 
     revalidatePath("/home/places");
 
@@ -548,23 +548,7 @@ export async function deleteReviewAction(reviewId: string): Promise<DeleteReview
     }
 
     const admin = createAdminClient();
-    const { data: reviews, error: reviewsError } = await admin
-      .from("reviews")
-      .select("rating")
-      .eq("place_id", review.place_id);
-
-    if (!reviewsError && reviews) {
-      const reviewCount = reviews.length;
-      const avgRating =
-        reviewCount === 0
-          ? 0
-          : Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(2));
-
-      await admin
-        .from("places")
-        .update({ avg_rating: avgRating, review_count: reviewCount })
-        .eq("id", review.place_id);
-    }
+    await refreshPlaceReviewSummary(admin, review.place_id, "レビューの削除に失敗しました。");
 
     revalidatePath("/home/places");
 

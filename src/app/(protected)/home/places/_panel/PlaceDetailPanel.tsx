@@ -208,7 +208,7 @@ function PopularReviewTagsSection({
           <span>ごちめし利用可</span>
         </Tag>
       )}
-      {price_range && (
+      {price_range !== null && (
         <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal" variant="neutral">
           <span>{getPriceRangeLabel(price_range)}</span>
         </Tag>

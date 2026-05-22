@@ -10,10 +10,10 @@ export const DEFAULT_GOOGLE_MAP_CENTER: GoogleMapPosition = {
   lng: 139.6965651,
 };
 
-export const DEFAULT_GOOGLE_MAP_ZOOM = 14;
+export const DEFAULT_GOOGLE_MAP_ZOOM = 15.5;
 
 export const DEFAULT_GOOGLE_MAP_OPTIONS: GoogleMapOptions = {
-  clickableIcons: true,
+  clickableIcons: false,
   fullscreenControl: false,
   gestureHandling: "greedy",
   mapTypeControl: false,

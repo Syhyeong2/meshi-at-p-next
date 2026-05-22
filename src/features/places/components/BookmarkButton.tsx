@@ -35,10 +35,16 @@ export function BookmarkButton({
 
   const handleToggle = (e: React.MouseEvent) => {
     const nextIsBookmarked = !isBookmarked;
-    setIsBookmarked(nextIsBookmarked);
-    setBookmarkCount((prev) => (nextIsBookmarked ? prev + 1 : prev - 1));
+    const prevIsBookmarked = isBookmarked;
+    const prevBookmarkCount = bookmarkCount;
 
-    toggleBookmark(e);
+    setIsBookmarked(nextIsBookmarked);
+    setBookmarkCount((prev) => (nextIsBookmarked ? prev + 1 : Math.max(0, prev - 1)));
+
+    toggleBookmark(e, () => {
+      setIsBookmarked(prevIsBookmarked);
+      setBookmarkCount(prevBookmarkCount);
+    });
   };
 
   if (variant === "extended") {

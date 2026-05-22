@@ -640,47 +640,60 @@ export async function getReviewAction(reviewId: string): Promise<GetReviewResult
 
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
 
-    const { data: review, error } = await supabase
-      .from("reviews")
-      .select(
-        `
-        id,
-        rating,
-        price_range,
-        comment,
-        visited_at,
-        created_at,
-        user_id,
-        place_id,
-        profiles!reviews_user_id_fkey (
-          nickname
-        ),
-        places (
-          name
-        ),
-        review_tags (
-          tags (
-            name,
-            emoji
+    const [reviewResult, likesResult, userLikeResult] = await Promise.all([
+      supabase
+        .from("reviews")
+        .select(
+          `
+          id,
+          rating,
+          price_range,
+          comment,
+          visited_at,
+          created_at,
+          user_id,
+          place_id,
+          profiles!reviews_user_id_fkey (
+            nickname
+          ),
+          places (
+            name
+          ),
+          review_tags (
+            tags (
+              name,
+              emoji
+            )
           )
-        ),
-        review_likes (
-          user_id
+        `
         )
-      `
-      )
-      .eq("id", normalizedReviewId)
-      .maybeSingle();
+        .eq("id", normalizedReviewId)
+        .maybeSingle(),
+      adminSupabase
+        .from("review_likes")
+        .select("user_id", { count: "exact", head: true })
+        .eq("review_id", normalizedReviewId),
+      supabase
+        .from("review_likes")
+        .select("user_id")
+        .eq("review_id", normalizedReviewId)
+        .eq("user_id", user.userId)
+        .maybeSingle(),
+    ]);
 
-    if (error || !review) {
+    const { data: review, error: reviewError } = reviewResult;
+    const { count: totalLikeCount } = likesResult;
+    const { data: userLikeData } = userLikeResult;
+
+    if (reviewError || !review) {
       return null;
     }
 
-    // いいね関連の加工)
-    const initialLikeCount = review.review_likes?.length ?? 0;
-    const initialIsLiked =
-      review.review_likes?.some((like) => like.user_id === user.userId) ?? false;
+    // いいね関連の加工
+    const initialLikeCount = totalLikeCount ?? 0;
+    const initialIsLiked = !!userLikeData;
 
     // タグの加工
     const tags = review.review_tags

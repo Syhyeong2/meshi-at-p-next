@@ -33,6 +33,7 @@ const PLACES_SELECT_COLUMNS = `
   review_count,
   distance_from_office_meters,
   walking_duration_seconds,
+  bookmark_count,
   place_bookmarks!left(user_id)
 `;
 
@@ -163,6 +164,7 @@ type PlaceRow = {
   review_count: number;
   distance_from_office_meters: number | null;
   walking_duration_seconds: number | null;
+  bookmark_count: number;
   place_bookmarks?: { user_id: string }[] | { user_id: string } | null;
 };
 
@@ -281,7 +283,7 @@ function toPlace(place: PlaceRow, currentUserId?: string): Place {
     distanceFromOfficeMeters: place.distance_from_office_meters,
     walkingDurationSeconds: place.walking_duration_seconds,
     isBookmarked: currentUserId ? bookmarks.some((b) => b.user_id === currentUserId) : false,
-    bookmarkCount: bookmarks.length,
+    bookmarkCount: place.bookmark_count,
   };
 }
 

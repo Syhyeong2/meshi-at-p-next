@@ -84,7 +84,7 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
           <div className="inline-flex gap-1">
             {place.category && <Tag variant="primary">{place.category}</Tag>}
             {place.isGochimeshi === true && <Tag variant="secondary">ごちめし利用可</Tag>}
-            {place.price_range && (
+            {place.price_range !== null && (
               <Tag variant="neutral">{getPriceRangeLabel(place.price_range)}</Tag>
             )}
           </div>

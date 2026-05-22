@@ -27,8 +27,8 @@ export function getWalkingDurationMinutes(
 }
 
 export const getPriceRangeLabel = (price_range: number | null | undefined): string => {
-  if (!price_range) return "未設定"; // 値がない場合のデフォルト
+  if (price_range === null || price_range === undefined) return "未設定";
 
   const item = PRICE_LEVELS.find((p) => p.value === price_range);
-  return item ? item.label : "不明"; // 該当なしの場合のフォールバック
+  return item ? item.label : "不明";
 };

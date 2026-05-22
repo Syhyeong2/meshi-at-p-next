@@ -407,6 +407,12 @@ export type Database = {
           review_id: string;
         }[];
       };
+      refresh_place_review_summary: {
+        Args: {
+          p_place_id: string;
+        };
+        Returns: undefined;
+      };
       get_place_popular_review_tags: {
         Args: {
           p_place_id: string;

@@ -252,10 +252,7 @@ export function ReviewForm({
   return (
     <div className="flex h-full flex-col">
       {/* フォーム中身：スクロールエリア */}
-      <div
-        ref={scrollAreaRef}
-        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4"
-      >
+      <div ref={scrollAreaRef} className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
         {/* 1. お店検索エリア */}
         {isNewShop && (
           <div ref={placeSectionRef} className="space-y-2">

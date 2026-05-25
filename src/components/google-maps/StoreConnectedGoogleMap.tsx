@@ -36,7 +36,7 @@ export function StoreConnectedGoogleMap(props: StoreConnectedGoogleMapProps) {
         selectedMarkerId={selectedMarkerId}
         onMarkerSelect={handleMarkerSelect}
       />
-      <GoogleMapMarkerLegend className="absolute top-4 right-4" />
+      <GoogleMapMarkerLegend />
     </>
   );
 }

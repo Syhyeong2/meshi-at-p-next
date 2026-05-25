@@ -108,38 +108,40 @@ export function GoogleMapCanvas({
       ) : null}
 
       {!hasLoadError ? (
-        <Map
-          id={mapInstanceId}
-          // Advanced Marker には Map ID が必要。reuseMaps と併用して再マウント時の生成コストも抑える。
-          mapId={mapId}
-          defaultCenter={defaultCenter}
-          defaultZoom={defaultZoom}
-          reuseMaps
-          clickableIcons={mergedMapOptions.clickableIcons}
-          fullscreenControl={mergedMapOptions.fullscreenControl}
-          gestureHandling={mergedMapOptions.gestureHandling}
-          mapTypeControl={mergedMapOptions.mapTypeControl}
-          streetViewControl={mergedMapOptions.streetViewControl}
-          zoomControl={mergedMapOptions.zoomControl}
-          className={cn("h-full w-full", mapClassName)}
-        >
-          <GoogleMapSelectedMarkerPan
-            marker={selectedMarker}
-            markerClickPanStateRef={markerClickPanStateRef}
-            mapContainerRef={mapContainerRef}
-            selectedMarkerOcclusion={selectedMarkerOcclusion}
-          />
-          {mapMarkers.map((marker) => (
-            <GoogleMapMarker
-              key={marker.id}
-              marker={marker}
-              selected={marker.id === selectedMarkerId}
-              onMarkerSelect={onMarkerSelect ? handleMarkerSelect : undefined}
+        <>
+          <Map
+            id={mapInstanceId}
+            // Advanced Marker には Map ID が必要。reuseMaps と併用して再マウント時の生成コストも抑える。
+            mapId={mapId}
+            defaultCenter={defaultCenter}
+            defaultZoom={defaultZoom}
+            reuseMaps
+            clickableIcons={mergedMapOptions.clickableIcons}
+            fullscreenControl={mergedMapOptions.fullscreenControl}
+            gestureHandling={mergedMapOptions.gestureHandling}
+            mapTypeControl={mergedMapOptions.mapTypeControl}
+            streetViewControl={mergedMapOptions.streetViewControl}
+            zoomControl={mergedMapOptions.zoomControl}
+            className={cn("h-full w-full", mapClassName)}
+          >
+            <GoogleMapSelectedMarkerPan
+              marker={selectedMarker}
+              markerClickPanStateRef={markerClickPanStateRef}
+              mapContainerRef={mapContainerRef}
+              selectedMarkerOcclusion={selectedMarkerOcclusion}
             />
-          ))}
+            {mapMarkers.map((marker) => (
+              <GoogleMapMarker
+                key={marker.id}
+                marker={marker}
+                selected={marker.id === selectedMarkerId}
+                onMarkerSelect={onMarkerSelect ? handleMarkerSelect : undefined}
+              />
+            ))}
+            {children}
+          </Map>
           <GoogleMapMarkerLegend />
-          {children}
-        </Map>
+        </>
       ) : null}
     </div>
   );

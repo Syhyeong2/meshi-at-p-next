@@ -12,6 +12,7 @@ import {
   DEFAULT_GOOGLE_MAP_ZOOM,
 } from "./constants";
 import { GoogleMapMarker } from "./GoogleMapMarker";
+import { GoogleMapMarkerLegend } from "./GoogleMapMarkerLegend";
 import { GoogleMapStatusMessage } from "./GoogleMapStatusMessage";
 import type {
   GoogleMapMarkerItem,
@@ -136,6 +137,7 @@ export function GoogleMapCanvas({
               onMarkerSelect={onMarkerSelect ? handleMarkerSelect : undefined}
             />
           ))}
+          <GoogleMapMarkerLegend />
           {children}
         </Map>
       ) : null}

@@ -1,11 +1,11 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Slot } from "radix-ui";
+import { Slot } from "radix-ui"; // 또는 사용 중인 Slot 라이브러리
 
 import { cn } from "@/lib/utils";
 
 const tagVariants = cva(
-  "group/tag inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md px-2 py-1 text-sm font-medium whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/tag inline-flex shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md font-medium whitespace-nowrap [&>svg]:pointer-events-none",
   {
     variants: {
       variant: {
@@ -14,9 +14,14 @@ const tagVariants = cva(
         tertiary: "bg-tertiary-background text-tertiary",
         neutral: "bg-neutral-background text-neutral",
       },
+      size: {
+        default: "h-5 px-2 py-1 text-sm [&>svg]:size-3!",
+        sm: " px-2 py-1 text-xs leading-none [&>svg]:size-2.5!",
+      },
     },
     defaultVariants: {
       variant: "primary",
+      size: "default",
     },
   }
 );
@@ -25,14 +30,21 @@ export interface TagProps extends React.ComponentProps<"span">, VariantProps<typ
   asChild?: boolean;
 }
 
-function Tag({ className, variant = "primary", asChild = false, ...props }: TagProps) {
+function Tag({
+  className,
+  variant = "primary",
+  size = "default",
+  asChild = false,
+  ...props
+}: TagProps) {
   const Comp = asChild ? Slot.Root : "span";
 
   return (
     <Comp
       data-slot="tag"
       data-variant={variant}
-      className={cn(tagVariants({ variant }), className)}
+      data-size={size}
+      className={cn(tagVariants({ variant, size }), className)}
       {...props}
     />
   );

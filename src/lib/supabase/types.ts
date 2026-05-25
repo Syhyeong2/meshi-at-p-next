@@ -93,6 +93,7 @@ export type Database = {
           price_range: number | null;
           is_gochimeshi: boolean;
           avg_rating: number;
+          bookmark_count: number;
           review_count: number;
           distance_from_office_meters: number | null;
           walking_duration_seconds: number | null;
@@ -111,6 +112,7 @@ export type Database = {
           price_range?: number | null;
           is_gochimeshi?: boolean;
           avg_rating?: number;
+          bookmark_count: number;
           review_count?: number;
           distance_from_office_meters?: number | null;
           walking_duration_seconds?: number | null;
@@ -129,6 +131,7 @@ export type Database = {
           price_range?: number | null;
           is_gochimeshi?: boolean;
           avg_rating?: number;
+          bookmark_count: number;
           review_count?: number;
           distance_from_office_meters?: number | null;
           walking_duration_seconds?: number | null;
@@ -425,6 +428,10 @@ export type Database = {
           category_id: string;
           review_count: number;
         }[];
+      };
+      refresh_place_bookmark_count: {
+        Args: { p_place_id: string };
+        Returns: undefined;
       };
     };
     Enums: {

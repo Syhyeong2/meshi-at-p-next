@@ -43,7 +43,7 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
           </div>
         )}
         <div className="flex flex-1 flex-col gap-2">
-          <div className="flex items-center">
+          <div className="inline-flex h-9 items-center">
             <p className="wrab-break-words line-clamp-1 min-w-0 flex-1 text-left text-lg font-semibold">
               {place.name}
             </p>
@@ -82,10 +82,20 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
             </div>
           </div>
           <div className="inline-flex gap-1">
-            {place.category && <Tag variant="primary">{place.category}</Tag>}
-            {place.isGochimeshi === true && <Tag variant="secondary">ごちめし利用可</Tag>}
+            {place.category && (
+              <Tag variant="primary" size="sm">
+                {place.category}
+              </Tag>
+            )}
+            {place.isGochimeshi === false && (
+              <Tag variant="secondary" size="sm">
+                ごちめし利用可
+              </Tag>
+            )}
             {place.price_range !== null && (
-              <Tag variant="neutral">{getPriceRangeLabel(place.price_range)}</Tag>
+              <Tag variant="neutral" size="sm">
+                {getPriceRangeLabel(place.price_range)}
+              </Tag>
             )}
           </div>
         </div>

@@ -3,6 +3,7 @@ import React from "react";
 import { StoreConnectedGoogleMap } from "@/components/google-maps";
 import { getPublicGoogleMapsEnv } from "@/lib/google-maps/env";
 import { NavigationSidebar } from "@/components/layout/NavigationBar";
+import { GoogleMapMarkerLegend } from "@/components/google-maps/GoogleMapMarkerLegend";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { apiKey, mapId } = getPublicGoogleMapsEnv();
@@ -31,6 +32,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
                   bottomPx: 48,
                 }}
               />
+              <GoogleMapMarkerLegend />
             </div>
           </section>
         </main>

@@ -1,5 +1,3 @@
-"use client";
-
 export function GoogleMapMarkerLegend() {
   return (
     <div className="absolute top-4 right-4 z-1 flex flex-col gap-2 rounded-lg border border-gray-200 bg-white/90 p-3 shadow-lg backdrop-blur-sm">

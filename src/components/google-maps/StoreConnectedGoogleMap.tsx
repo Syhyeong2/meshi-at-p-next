@@ -6,6 +6,7 @@ import { GoogleMap } from "@/components/google-maps";
 import { useMapMarkerStore } from "@/stores";
 
 import type { GoogleMapProps } from "./types";
+import { GoogleMapMarkerLegend } from "./GoogleMapMarkerLegend";
 
 type StoreConnectedGoogleMapProps = Omit<
   GoogleMapProps,
@@ -28,11 +29,14 @@ export function StoreConnectedGoogleMap(props: StoreConnectedGoogleMapProps) {
   };
 
   return (
-    <GoogleMap
-      {...props}
-      markers={markers}
-      selectedMarkerId={selectedMarkerId}
-      onMarkerSelect={handleMarkerSelect}
-    />
+    <>
+      <GoogleMap
+        {...props}
+        markers={markers}
+        selectedMarkerId={selectedMarkerId}
+        onMarkerSelect={handleMarkerSelect}
+      />
+      <GoogleMapMarkerLegend className="absolute top-4 right-4" />
+    </>
   );
 }

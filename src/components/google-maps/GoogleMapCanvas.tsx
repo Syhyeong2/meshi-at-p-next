@@ -20,6 +20,7 @@ import type {
   GoogleMapProps,
   GoogleMapSelectedMarkerOcclusion,
 } from "./types";
+import { useUIStore } from "@/stores";
 
 const EMPTY_MARKERS: GoogleMapMarkerItem[] = [];
 const DEFAULT_LOADING_CONTENT = {
@@ -157,6 +158,7 @@ function GoogleMapSelectedMarkerPan({
   selectedMarkerOcclusion?: GoogleMapSelectedMarkerOcclusion;
 }) {
   const map = useMap();
+  const { isMobile } = useUIStore();
   const markerId = marker?.id;
   const position = marker?.position;
   const lat = position?.lat;
@@ -169,22 +171,44 @@ function GoogleMapSelectedMarkerPan({
 
     const markerClickPanState = markerClickPanStateRef.current;
 
-    if (
-      markerClickPanState?.markerId === markerId &&
-      !isClickOccludedByPanel(markerClickPanState, mapContainerRef.current, selectedMarkerOcclusion)
-    ) {
-      markerClickPanStateRef.current = null;
-      return;
+    // モバイルの場合はサイドバー等のオフセットを無視し、下部パネルの状況に応じて中心を調整する
+    let effectiveOcclusion = selectedMarkerOcclusion;
+
+    if (isMobile) {
+      const mapHeight = mapContainerRef.current?.offsetHeight ?? 0;
+      effectiveOcclusion = {
+        leftPx: 0,
+        topPx: 0,
+        bottomPx: (mapHeight * 40) / 100,
+      };
+    }
+
+    if (!isMobile && markerClickPanState?.markerId === markerId) {
+      if (
+        !isClickOccludedByPanel(markerClickPanState, mapContainerRef.current, effectiveOcclusion)
+      ) {
+        markerClickPanStateRef.current = null;
+        return;
+      }
     }
 
     markerClickPanStateRef.current = null;
     map.panTo(
-      getOcclusionAdjustedCenter(map, { lat, lng }, selectedMarkerOcclusion) ?? {
+      getOcclusionAdjustedCenter(map, { lat, lng }, effectiveOcclusion) ?? {
         lat,
         lng,
       }
     );
-  }, [lat, lng, map, mapContainerRef, markerClickPanStateRef, markerId, selectedMarkerOcclusion]);
+  }, [
+    lat,
+    lng,
+    map,
+    mapContainerRef,
+    markerClickPanStateRef,
+    markerId,
+    selectedMarkerOcclusion,
+    isMobile,
+  ]);
 
   return null;
 }
@@ -279,7 +303,7 @@ function getOcclusionAdjustedCenter(
   }
 
   const scale = 2 ** zoom;
-  const xOffsetPx = selectedMarkerOcclusion.leftPx / 2;
+  const xOffsetPx = (selectedMarkerOcclusion.leftPx ?? 0) / 2;
   const yOffsetPx =
     ((selectedMarkerOcclusion.topPx ?? 0) - (selectedMarkerOcclusion.bottomPx ?? 0)) / 2;
   const centerPoint = new mapsRuntime.Point(

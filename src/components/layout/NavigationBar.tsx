@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, User, Bookmark, LogOut } from "lucide-react";
+import { MapPin, User, Bookmark } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
-import { AlertModal } from "@/components/ui/AlertModal";
-import { logoutAction } from "@/features/auth/actions";
+
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
 
 const topLinks = [
   { href: "/home/places", label: "Map", icon: MapPin },
@@ -17,31 +16,13 @@ const topLinks = [
 
 export function NavigationSidebar() {
   const pathname = usePathname();
-  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-
-  const handleLogout = async () => {
-    const result = await logoutAction();
-
-    if (result?.error) {
-      throw new Error(result.error);
-    }
-  };
 
   return (
     <nav
-      className="bg-card z-30 flex h-full w-20 flex-col items-center justify-between border-r border-slate-200 py-4"
+      className="bg-card z-30 flex h-16 w-full flex-row items-center justify-between border-t border-slate-200 px-6 py-2 md:h-full md:w-20 md:flex-col md:border-t-0 md:border-r md:px-0 md:py-4"
       aria-label="Navigation"
     >
-      <AlertModal
-        isOpen={isLogoutOpen}
-        onOpenChange={setIsLogoutOpen}
-        onConfirm={handleLogout}
-        confirmText="ログアウト"
-        pendingText="ログアウト中..."
-        errorMessage="ログアウトに失敗しました。もう一度お試しください。"
-        description="本当にログアウトしてもよろしいですか？"
-      />
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-1 flex-row justify-around gap-4 md:flex-initial md:flex-col md:justify-start">
         {topLinks.map((link) => {
           const isActive = pathname.startsWith(link.href);
           return (
@@ -49,25 +30,17 @@ export function NavigationSidebar() {
               key={link.href}
               asChild
               variant={isActive ? "default" : "ghost"}
-              className="h-14 w-14 rounded-xl p-0"
+              className="h-12 w-12 rounded-xl p-0 md:h-14 md:w-14"
             >
               <Link href={link.href} aria-label={link.label}>
-                <link.icon className="size-6" />
+                <link.icon className="size-5 md:size-6" />
               </Link>
             </Button>
           );
         })}
       </div>
-      <div className="flex flex-col gap-4">
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-14 w-14 rounded-xl p-0 text-slate-600 hover:text-slate-950"
-          aria-label="Logout"
-          onClick={() => setIsLogoutOpen(true)}
-        >
-          <LogOut className="size-6" />
-        </Button>
+      <div className="hidden md:flex md:flex-col md:gap-4">
+        <LogoutButton className="text-slate-600 hover:text-slate-950 md:h-14 md:w-14" />
       </div>
     </nav>
   );

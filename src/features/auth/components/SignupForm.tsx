@@ -64,7 +64,7 @@ export function SignupForm({ initialInviteCode = "" }: SignupFormProps) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-9 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-9">
       <form action={handleAction} className="flex flex-col gap-7" noValidate>
         <div>
           <h2 className="text-center text-2xl font-bold text-slate-950">新規登録</h2>

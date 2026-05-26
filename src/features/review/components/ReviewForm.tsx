@@ -43,6 +43,26 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="m-0 text-sm font-bold">{children}</FormLabel>
 );
 
+const colors: (
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "neutral"
+  | "primary_outline"
+  | "secondary_outline"
+  | "tertiary_outline"
+  | "neutral_outline"
+)[] = [
+  "primary",
+  "secondary",
+  "tertiary",
+  "neutral",
+  "primary_outline",
+  "secondary_outline",
+  "tertiary_outline",
+  "neutral_outline",
+];
+
 type ReviewFormSelectedPlace = ReviewFormPlaceInfo | SignedGooglePlaceDetails;
 
 function formatDistance(distanceMeters: number | null) {
@@ -358,16 +378,20 @@ export function ReviewForm({
           {state.errors.priceRange && (
             <p className="text-sm font-medium text-red-500">{state.errors.priceRange}</p>
           )}
-          {state.groupedTags.map((cat) => (
-            <div key={cat.category.id}>
-              <CategorizedTags
-                categoryName={cat.category.name}
-                tags={cat.tags}
-                selectedTags={state.selectedTags}
-                onTagToggle={(tag) => handlers.handleTagToggle(tag)}
-              />
-            </div>
-          ))}
+          {state.groupedTags.map((cat, index) => {
+            const variantColor = colors[(index + 1) % colors.length];
+            return (
+              <div key={cat.category.id}>
+                <CategorizedTags
+                  categoryName={cat.category.name}
+                  tags={cat.tags}
+                  variant={variantColor}
+                  selectedTags={state.selectedTags}
+                  onTagToggle={(tag) => handlers.handleTagToggle(tag)}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* 5. 訪問日 */}

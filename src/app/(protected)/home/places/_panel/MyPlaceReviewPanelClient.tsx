@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { deleteReviewAction } from "@/features/review/actions";
-import { createPortal } from "react-dom";
 
 type MyReviewPanelClientProps = {
   review: {
@@ -69,19 +68,15 @@ export function MyPlaceReviewPanelClient({
           onDelete={() => setIsDeleteModalOpen(true)}
         />
       </div>
-
-      {createPortal(
-        <AlertModal
-          isOpen={isDeleteModalOpen}
-          onOpenChange={setIsDeleteModalOpen}
-          onConfirm={handleExecuteDelete}
-          description="このレビューを削除しますか？"
-          confirmText="削除する"
-          pendingText="削除中..."
-          errorMessage="レビューの削除に失敗しました。もう一度お試しください。"
-        />,
-        document.body
-      )}
+      <AlertModal
+        isOpen={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        onConfirm={handleExecuteDelete}
+        description="このレビューを削除しますか？"
+        confirmText="削除する"
+        pendingText="削除中..."
+        errorMessage="レビューの削除に失敗しました。もう一度お試しください。"
+      />
     </div>
   );
 }

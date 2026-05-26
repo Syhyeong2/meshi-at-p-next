@@ -87,7 +87,7 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
                 {place.category}
               </Tag>
             )}
-            {place.isGochimeshi === false && (
+            {place.isGochimeshi === true && (
               <Tag variant="secondary" size="sm">
                 ごちめし利用可
               </Tag>

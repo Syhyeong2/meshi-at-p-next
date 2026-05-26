@@ -446,6 +446,7 @@ async function PlaceDetailBody({
         <div className="flex flex-col gap-4 overflow-y-auto p-6">
           <div className="flex flex-col gap-3">
             {/* 代表画像エリア。デザイン変更時はattributionテキストまで一連のセットとして扱う。 */}
+            <h4 className="wrap-break-words text-lg font-bold text-slate-950">{place.name}</h4>
             {place.imageUrl ? (
               <div className="flex flex-col gap-1">
                 {}
@@ -459,7 +460,6 @@ async function PlaceDetailBody({
                 <PhotoAttributions place={place} />
               </div>
             ) : null}
-            <h4 className="wrap-break-words text-lg font-bold text-slate-950">{place.name}</h4>
 
             {/* 基本情報エリア。このブロックは付加情報のロードとは独立して先に表示される必要がある。 */}
             <div className="flex items-center gap-1">

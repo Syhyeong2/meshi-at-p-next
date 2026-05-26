@@ -12,6 +12,7 @@ import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { PlacesPanelManager } from "../places/_panel/PlacesPanelManager";
 import { MyReviewCard } from "@/features/review/components/MyReviewCard";
 import { Footer } from "@/components/ui/Footer";
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { getUserProfileStatsAction } from "@/features/profile/actions";
 
 type MypageProps = {
@@ -57,9 +58,13 @@ export default async function Mypage({ searchParams }: MypageProps) {
   return (
     <>
       <MapMarkersSync source="mypage" markers={placeMarkers} selectedMarkerId={placeId} />
-      <div className="flex h-full flex-col overflow-y-auto pb-20">
+      <div className="flex h-full flex-col overflow-y-auto">
         <div className="flex flex-col gap-4 border-b border-b-slate-200 bg-white p-6">
-          <h1 className="text-xl font-bold text-slate-900">マイページ</h1>
+          <div className="flex items-center">
+            <h1 className="flex-1 text-xl font-bold text-slate-900">マイページ</h1>
+            <LogoutButton className="text-slate-600 hover:text-slate-950 md:hidden" />
+          </div>
+
           <div className="bg-primary-background flex w-full flex-col gap-4 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="flex-1">
@@ -85,63 +90,63 @@ export default async function Mypage({ searchParams }: MypageProps) {
           </div>
         </div>
 
-        {/* マイレビューセクション */}
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-4">
-          <div className="flex items-center">
-            <h2 className="flex-1 text-sm font-bold">マイレビュー</h2>
-            <Link
-              href="/home/mypage/reviews"
-              className="text-primary cursor-pointer text-sm hover:underline"
-            >
-              全てのレビュー
-            </Link>
+        <div className="flex flex-col">
+          {/* マイレビューセクション */}
+          <div className="flex flex-col gap-3 border-b border-slate-200 p-4">
+            <div className="flex items-center">
+              <h2 className="flex-1 text-sm font-bold">マイレビュー</h2>
+              <Link
+                href="/home/mypage/reviews"
+                className="text-primary cursor-pointer text-sm hover:underline"
+              >
+                全てのレビュー
+              </Link>
+            </div>
+            {myReviews.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {myReviews.map((review) => (
+                  <MyReviewCard
+                    key={review.id}
+                    id={review.id}
+                    place={review.place}
+                    rating={review.rating}
+                    comment={review.comment || ""}
+                    date={new Date(review.date)}
+                    tags={review.tags}
+                    href={buildReviewDetailHref(review.id)}
+                    isSelected={reviewId === review.id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-10 text-sm text-slate-500">
+                まだレビューがありません
+              </div>
+            )}
           </div>
-          {myReviews.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              {myReviews.map((review) => (
-                <MyReviewCard
-                  key={review.id}
-                  id={review.id}
-                  place={review.place}
-                  rating={review.rating}
-                  comment={review.comment || ""}
-                  date={new Date(review.date)}
-                  tags={review.tags}
-                  href={buildReviewDetailHref(review.id)}
-                  isSelected={reviewId === review.id}
-                />
-              ))}
+          {/* ブックマークセクション */}
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex items-center">
+              <h2 className="flex-1 text-sm font-bold">
+                ブックマーク{" "}
+                <span className="font-medium text-slate-500">({bookmarkedPlaces.length ?? 0})</span>
+              </h2>
+              <Link href="/home/bookmarks" className="text-primary text-sm hover:underline">
+                全てのブックマーク
+              </Link>
             </div>
-          ) : (
-            <div className="flex items-center justify-center py-10 text-sm text-slate-500">
-              まだレビューがありません
-            </div>
-          )}
-        </div>
-
-        {/* ブックマークセクション */}
-        <div className="flex flex-col gap-3 p-4">
-          <div className="flex items-center">
-            <h2 className="flex-1 text-sm font-bold">
-              ブックマーク{" "}
-              <span className="font-medium text-slate-500">({bookmarkedPlaces.length ?? 0})</span>
-            </h2>
-            <Link href="/home/bookmarks" className="text-primary text-sm hover:underline">
-              全てのブックマーク
-            </Link>
+            {bookmarkedPlaces.length > 0 ? (
+              <PlaceList
+                places={bookmarkedPlaces}
+                placeDetailHrefs={placeDetailHrefs}
+                activePlaceId={placeId}
+              />
+            ) : (
+              <div className="flex items-center justify-center py-10 text-sm text-slate-500">
+                まだブックマークした店がありません
+              </div>
+            )}
           </div>
-
-          {bookmarkedPlaces.length > 0 ? (
-            <PlaceList
-              places={bookmarkedPlaces}
-              placeDetailHrefs={placeDetailHrefs}
-              activePlaceId={placeId}
-            />
-          ) : (
-            <div className="flex items-center justify-center py-10 text-sm text-slate-500">
-              まだブックマークした店がありません
-            </div>
-          )}
         </div>
       </div>
 

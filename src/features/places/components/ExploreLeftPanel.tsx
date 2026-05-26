@@ -12,6 +12,7 @@ import { useFilterNavigation } from "../hooks/useFilterNavigation";
 import { Paginator } from "@/components/ui/Paginator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import type { PlaceSort } from "@/features/places/actions";
+import { useUIStore } from "@/stores";
 
 // 価格帯の表示ラベル用マスター
 const PRICE_LEVELS = [
@@ -66,6 +67,7 @@ export function ExploreLeftPanel({
 }: ExploreLeftPanelProps) {
   const [activeView, setActiveView] = useState<"list" | "filter">("list");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const { setListExpanded } = useUIStore();
 
   const {
     keyword,
@@ -93,11 +95,13 @@ export function ExploreLeftPanel({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
+      setListExpanded(true);
       searchByKeyword(e.currentTarget.value);
     }
   };
 
   const handleClear = () => {
+    setListExpanded(true);
     searchByKeyword("");
   };
 
@@ -184,11 +188,11 @@ export function ExploreLeftPanel({
   ];
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-white">
       {/* タイトルと検索バー・ボタン */}
-      <div className="flex flex-col gap-4 border-b border-slate-200 p-4">
+      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 md:gap-4">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="bg-primary-linear bg-clip-text text-4xl font-black text-transparent select-none">
+          <h1 className="bg-primary-linear bg-clip-text text-2xl font-black text-transparent select-none md:text-4xl">
             Meshi At PLAY
           </h1>
         </div>
@@ -202,6 +206,7 @@ export function ExploreLeftPanel({
               autoComplete="off"
               defaultValue={keyword}
               onKeyDown={handleKeyDown}
+              onFocus={() => setListExpanded(true)}
               className="border-slate-300 py-2 pr-4 pl-10 placeholder:text-slate-950"
             />
           </div>
@@ -258,12 +263,12 @@ export function ExploreLeftPanel({
       </div>
       {/* 動的コンテンツエリア */}
       {activeView === "filter" ? (
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 p-5 md:overflow-y-auto">
           <FilterList onClose={() => setActiveView("list")} />
         </div>
       ) : (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col md:overflow-y-auto">
             <div className="flex items-center justify-between gap-3 p-4 pb-3">
               <p className="min-w-0 text-sm font-semibold text-slate-950">
                 お店一覧 ({pagination.totalCount}件)
@@ -304,15 +309,15 @@ export function ExploreLeftPanel({
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-3">
+            <div className="flex-1 px-4 pb-3">
               <PlaceList
                 places={places}
                 placeDetailHrefs={placeDetailHrefs}
                 activePlaceId={placeId}
               />
             </div>
+            <Paginator pagination={pagination} getPageHref={getPageHref} />
           </div>
-          <Paginator pagination={pagination} getPageHref={getPageHref} />
         </>
       )}
     </div>

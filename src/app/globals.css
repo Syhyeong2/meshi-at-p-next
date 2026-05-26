@@ -30,4 +30,5 @@ body {
   background-color: var(--color-white);
   color: var(--color-neutral);
   font-family: var(--font-sans); /* フォントの適用 */
+  overscroll-behavior-y: none;
 }

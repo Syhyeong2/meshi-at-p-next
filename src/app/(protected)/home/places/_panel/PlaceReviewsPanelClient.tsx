@@ -15,7 +15,6 @@ import { ReviewCard } from "@/features/review/components/ReviewCard";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
 import { deleteReviewAction, toggleReviewLikeAction } from "@/features/review/actions";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { createPortal } from "react-dom";
 
 type PlaceReviewsPanelClientProps = {
   basePath: string;
@@ -327,20 +326,17 @@ export function PlaceReviewsPanelClient({
           )}
         </div>
       )}
-      {typeof window !== "undefined" && isDeleteModalOpen
-        ? createPortal(
-            <AlertModal
-              isOpen={isDeleteModalOpen}
-              onOpenChange={setIsDeleteModalOpen}
-              onConfirm={handleExecuteDelete}
-              description="このレビューを削除しますか？"
-              confirmText="削除する"
-              pendingText="削除中..."
-              errorMessage="レビューの削除に失敗しました。もう一度お試しください。"
-            />,
-            document.getElementById("places_layout")!
-          )
-        : null}
+      {typeof window !== "undefined" && isDeleteModalOpen ? (
+        <AlertModal
+          isOpen={isDeleteModalOpen}
+          onOpenChange={setIsDeleteModalOpen}
+          onConfirm={handleExecuteDelete}
+          description="このレビューを削除しますか？"
+          confirmText="削除する"
+          pendingText="削除中..."
+          errorMessage="レビューの削除に失敗しました。もう一度お試しください。"
+        />
+      ) : null}
     </div>
   );
 }

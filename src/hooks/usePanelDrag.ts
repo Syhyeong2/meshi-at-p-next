@@ -21,7 +21,7 @@ export function usePanelDrag({
   state: externalState,
   onStateChange,
   thresholds = { large: 250, small: 50 },
-  positions = { full: 0, half: 60, minimized: 94 },
+  positions = { full: 0, half: 50, minimized: 94 },
 }: UsePanelDragOptions = {}) {
   const [internalState, setInternalState] = useState<PanelState>(initialState);
 
@@ -126,22 +126,16 @@ export function usePanelDrag({
     [positions, panelState, isDragging, dragY]
   );
 
-  const pointerHandlers = useMemo(
+  const dragHandlers = useMemo(
     () => ({
       onPointerDown,
       onPointerMove,
       onPointerUp,
-    }),
-    [onPointerDown, onPointerMove, onPointerUp]
-  );
-
-  const touchHandlers = useMemo(
-    () => ({
       onTouchStart,
       onTouchMove,
       onTouchEnd,
     }),
-    [onTouchStart, onTouchMove, onTouchEnd]
+    [onPointerDown, onPointerMove, onPointerUp, onTouchStart, onTouchMove, onTouchEnd]
   );
 
   return {
@@ -150,7 +144,6 @@ export function usePanelDrag({
     dragY,
     isDragging,
     getTranslateY,
-    pointerHandlers,
-    touchHandlers,
+    dragHandlers,
   };
 }

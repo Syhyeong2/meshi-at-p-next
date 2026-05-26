@@ -12,11 +12,7 @@ export function HomeLayoutClient({
   map: React.ReactNode;
 }) {
   const { isPanelOpen, isMobile, setIsMobile } = useUIStore();
-  const { isDragging, getTranslateY, pointerHandlers, touchHandlers } = usePanelDrag({
-    initialState: "half",
-    thresholds: { large: 250, small: 50 },
-    positions: { full: 0, half: 60, minimized: 94 },
-  });
+  const { isDragging, getTranslateY, dragHandlers } = usePanelDrag();
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -35,11 +31,10 @@ export function HomeLayoutClient({
           style={{
             transform: getTranslateY(isMobile),
           }}
-          {...(isMobile ? touchHandlers : {})}
         >
           <div
             className="flex h-10 shrink-0 cursor-pointer touch-none items-center justify-center md:hidden"
-            {...pointerHandlers}
+            {...dragHandlers}
           >
             <div className="h-1.5 w-12 rounded-full bg-slate-300" />
           </div>

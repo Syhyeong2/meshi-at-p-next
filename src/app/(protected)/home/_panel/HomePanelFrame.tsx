@@ -46,11 +46,7 @@ export function HomePanelFrame({ title, closeHref, children }: HomePanelFramePro
   );
 
   const { setPanelOpen, isMobile } = useUIStore();
-  const { isDragging, getTranslateY, pointerHandlers, touchHandlers } = usePanelDrag({
-    initialState: "half",
-    thresholds: { large: 250, small: 50 },
-    positions: { full: 0, half: 60, minimized: 94 },
-  });
+  const { isDragging, getTranslateY, dragHandlers } = usePanelDrag();
 
   useEffect(() => {
     setPanelOpen(true);
@@ -70,11 +66,10 @@ export function HomePanelFrame({ title, closeHref, children }: HomePanelFramePro
       style={{
         transform: getTranslateY(isMobile),
       }}
-      {...(isMobile ? touchHandlers : {})}
     >
       <div
         className="flex h-10 shrink-0 cursor-pointer touch-none items-center justify-center md:hidden"
-        {...pointerHandlers}
+        {...dragHandlers}
       >
         <div className="h-1.5 w-12 rounded-full bg-slate-300" />
       </div>

@@ -188,7 +188,7 @@ export function ExploreLeftPanel({
   ];
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-white">
       {/* タイトルと検索バー・ボタン */}
       <div className="flex flex-col gap-3 border-b border-slate-200 p-4 md:gap-4">
         <div className="flex items-center justify-between gap-3">
@@ -263,12 +263,12 @@ export function ExploreLeftPanel({
       </div>
       {/* 動的コンテンツエリア */}
       {activeView === "filter" ? (
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 p-5 md:overflow-y-auto">
           <FilterList onClose={() => setActiveView("list")} />
         </div>
       ) : (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col md:overflow-y-auto">
             <div className="flex items-center justify-between gap-3 p-4 pb-3">
               <p className="min-w-0 text-sm font-semibold text-slate-950">
                 お店一覧 ({pagination.totalCount}件)
@@ -309,15 +309,15 @@ export function ExploreLeftPanel({
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-3">
+            <div className="flex-1 px-4 pb-3">
               <PlaceList
                 places={places}
                 placeDetailHrefs={placeDetailHrefs}
                 activePlaceId={placeId}
               />
             </div>
+            <Paginator pagination={pagination} getPageHref={getPageHref} />
           </div>
-          <Paginator pagination={pagination} getPageHref={getPageHref} />
         </>
       )}
     </div>

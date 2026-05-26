@@ -19,7 +19,7 @@ export function NavigationSidebar() {
 
   return (
     <nav
-      className="bg-card z-30 flex h-16 w-full flex-row items-center justify-between border-t border-slate-200 px-6 py-2 md:h-full md:w-20 md:flex-col md:border-t-0 md:border-r md:px-0 md:py-4"
+      className="bg-card z-30 flex h-16 w-full flex-row items-center justify-between border-t border-slate-200 px-6 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] md:h-full md:w-20 md:flex-col md:border-t-0 md:border-r md:px-0 md:py-4"
       aria-label="Navigation"
     >
       <div className="flex flex-1 flex-row justify-around gap-4 md:flex-initial md:flex-col md:justify-start">

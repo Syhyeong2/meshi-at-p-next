@@ -58,7 +58,7 @@ export default async function Mypage({ searchParams }: MypageProps) {
   return (
     <>
       <MapMarkersSync source="mypage" markers={placeMarkers} selectedMarkerId={placeId} />
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-y-auto">
         <div className="flex flex-col gap-4 border-b border-b-slate-200 bg-white p-6">
           <div className="flex items-center">
             <h1 className="flex-1 text-xl font-bold text-slate-900">マイページ</h1>
@@ -90,7 +90,7 @@ export default async function Mypage({ searchParams }: MypageProps) {
           </div>
         </div>
 
-        <div className="flex flex-col overflow-y-auto">
+        <div className="flex flex-col">
           {/* マイレビューセクション */}
           <div className="flex flex-col gap-3 border-b border-slate-200 p-4">
             <div className="flex items-center">

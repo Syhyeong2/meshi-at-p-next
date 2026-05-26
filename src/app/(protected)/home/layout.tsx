@@ -24,7 +24,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <div
       id="places_layout"
-      className="bg-background flex h-screen w-full flex-col overflow-hidden md:flex-row"
+      className="bg-background flex h-dvh w-full flex-col overflow-hidden md:flex-row"
     >
       {/* --- 1. メニューバー --- */}
       <div className="order-last md:order-first">

@@ -37,12 +37,12 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
     <>
       <MapMarkersSync source="bookmarks" markers={placeMarkers} selectedMarkerId={placeId} />
 
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-y-auto md:overflow-hidden">
         <div className="flex flex-col gap-1 border-b border-b-slate-200 bg-white p-6">
           <h1 className="text-xl font-bold text-slate-900">ブックマーク</h1>
           <span className="text-slate-500">{bookmarkedPlaces.length ?? 0}件のお店</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 p-4 md:overflow-y-auto">
           {bookmarkedPlaces.length > 0 ? (
             <PlaceList
               places={bookmarkedPlaces}

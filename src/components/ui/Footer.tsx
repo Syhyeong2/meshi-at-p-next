@@ -41,7 +41,7 @@ export function Footer({
 
         {(href || onSubmit) && (
           <Button
-            asChild={!!href} // href가 있으면 Link를 감싸는 모드로 전환
+            asChild={!!href}
             className="bg-primary-linear h-11 flex-1 rounded-lg text-base text-white"
             disabled={isSubmitDisabled}
             onClick={onSubmit}

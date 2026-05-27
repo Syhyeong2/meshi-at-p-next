@@ -86,7 +86,7 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
           <div className="inline-flex w-full gap-1 overflow-x-scroll">
             {place.category && (
               <Tag variant="primary" size="sm">
-                {place.category}sasds
+                {place.category}
               </Tag>
             )}
             {place.isGochimeshi === true && (

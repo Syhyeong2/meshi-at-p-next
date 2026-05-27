@@ -59,7 +59,7 @@ export const MyReviewCard = ({
         </div>
       </div>
       {tags && tags.length > 0 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto">
           {tags.map((tag) => (
             <Tag key={tag} variant="primary">
               {tag}
